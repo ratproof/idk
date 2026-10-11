@@ -1,43 +1,51 @@
-import { useState } from "react";
 import { slugify, type Command } from "@/lib/api";
-import { Usage } from "./Usage";
 import { CopyButton } from "./CopyButton";
 
-const UsageBlock = ({ c }: { c: Command }) => (
-  <div className="group mt-2 flex items-center justify-between gap-2 rounded-[6px] border border-line bg-surface-1 px-3 py-2">
-    <Usage text={c.usage} /><CopyButton text={c.usage} />
-  </div>
-);
+// <required> and [optional] and [x=default] tokens from the usage string
+function parseArgs(usage: string) {
+  return (usage.match(/<[^>]+>|\[[^\]]+\]/g) ?? []).map((t) => {
+    const optional = t.startsWith("[");
+    const inner = t.slice(1, -1);
+    const m = optional ? inner.match(/^([^=]+)=(.+)$/) : null;
+    return { name: m ? m[1] : inner, def: m?.[2], optional };
+  });
+}
 
-// A documentation-style row, not a card.
+const label = "text-[15px] text-zinc-400";
 export function CommandCard({ cmd, highlighted }: { cmd: Command; highlighted: boolean }) {
-  const [open, setOpen] = useState(highlighted);
-  const id = slugify(cmd.name);
-  const subs = cmd.subcommands.length;
+  const args = parseArgs(cmd.usage);
   return (
-    <div id={id} className={`scroll-mt-24 border-b border-line py-5 ${highlighted ? "bg-surface-1" : ""}`}>
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <a href={`#${id}`} className="font-mono font-medium">{cmd.name}</a>
-        {cmd.aliases.length > 0 && <span className="text-sm text-muted">aliases: {cmd.aliases.join(", ")}</span>}
-        {subs > 0 && (
-          <button aria-expanded={open} onClick={() => setOpen(!open)} className="ml-auto text-sm text-muted hover:text-fg">
-            {open ? "Hide" : "Show"} {subs} subcommand{subs > 1 ? "s" : ""}
-          </button>
+    <article id={slugify(cmd.name)} className={`scroll-mt-28 overflow-hidden rounded-3xl border bg-[#101012] transition-colors hover:border-white/15 ${highlighted ? "border-accent/60" : "border-line"}`}>
+      <div className="p-6 pb-5">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="break-words text-xl font-medium tracking-tight">{cmd.name}</h3>
+          <CopyButton text={cmd.usage} />
+        </div>
+        {cmd.description && <p className="mt-2 text-[15px] text-muted">{cmd.description}</p>}
+      </div>
+      <div className="space-y-5 border-t border-line p-6">
+        <div>
+          <p className={label}>arguments</p>
+          {args.length === 0 ? <p className="mt-2.5 text-[15px]">none</p> : (
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {args.map((a, i) => (
+                <span key={i} title={a.optional ? "optional" : "required"}
+                  className={`max-w-full break-words rounded-lg px-3 py-1.5 text-sm italic ${a.optional ? "border border-dashed border-white/15 text-muted" : "bg-white/[0.07] text-fg"}`}>
+                  {a.name}{a.def && <span className="not-italic text-zinc-500"> = {a.def}</span>}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        {cmd.aliases.length > 0 && (
+          <div>
+            <p className={label}>aliases</p>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {cmd.aliases.map((a) => <span key={a} className="rounded-lg bg-white/[0.07] px-3 py-1.5 text-sm">{a}</span>)}
+            </div>
+          </div>
         )}
       </div>
-      {cmd.description && <p className="mt-1 text-[15px] text-muted">{cmd.description}</p>}
-      <UsageBlock c={cmd} />
-      {subs > 0 && open && (
-        <div className="ml-4 mt-3 border-l border-line pl-4">
-          {cmd.subcommands.map((s) => (
-            <div key={s.name} id={slugify(s.name)} className="scroll-mt-24 py-3">
-              <span className="font-mono text-sm font-medium">{s.name}</span>
-              {s.description && <p className="text-sm text-muted">{s.description}</p>}
-              <UsageBlock c={s} />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    </article>
   );
 }
