@@ -9,6 +9,7 @@ const TITLES: Record<string, string> = {
   "/commands": "Commands",
   "/terms": "Terms",
   "/privacy": "Privacy",
+  "/status": "Status",
 };
 
 export default function Layout() {
