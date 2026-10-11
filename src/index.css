@@ -40,3 +40,6 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .marquee-wrap:hover .marquee { animation-play-state: paused; }
 .shot-fade { mask-image: linear-gradient(to bottom, #000 72%, transparent); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.stars { position: absolute; inset: 0; pointer-events: none; background-size: 420px 420px;
+  background-image: radial-gradient(1.5px 1.5px at 10% 20%, #fff8, transparent), radial-gradient(1px 1px at 70% 12%, #fff7, transparent), radial-gradient(1.5px 1.5px at 40% 70%, #fff6, transparent),
+  radial-gradient(1px 1px at 88% 60%, #fff7, transparent), radial-gradient(1px 1px at 22% 90%, #fff6, transparent), radial-gradient(1.5px 1.5px at 58% 38%, #fff5, transparent); }
