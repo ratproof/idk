@@ -23,6 +23,7 @@ export default function App() {
           <Route path="/support" element={<ExternalRedirect to={SUPPORT_URL} />} />
           <Route path="/invite" element={<ExternalRedirect to={INVITE_URL} />} />
           <Route path="/terms" element={<Legal kind="terms" />} />
+          <Route path="/tos" element={<Navigate to="/terms" replace />} />
           <Route path="/privacy" element={<Legal kind="privacy" />} />
           <Route path="*" element={<NotFound />} />
         </Route>
