@@ -37,6 +37,16 @@ export function CommandCard({ cmd, highlighted }: { cmd: Command; highlighted: b
             </div>
           )}
         </div>
+        {cmd.permissions && (
+          <div>
+            <p className={label}>permissions</p>
+            {cmd.permissions.length === 0 ? <p className="mt-2.5 text-[15px]">none</p> : (
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {cmd.permissions.map((p) => <span key={p} className="rounded-lg bg-[#1d1d20] px-3 py-1.5 text-sm font-medium">{p}</span>)}
+              </div>
+            )}
+          </div>
+        )}
         {cmd.aliases.length > 0 && (
           <div>
             <p className={label}>aliases</p>
