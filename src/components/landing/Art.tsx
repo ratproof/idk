@@ -54,7 +54,7 @@ export const ReactionRolesArt = () => <Diagram center={MousePointerClick} nodes=
   { x: 80, y: 50, label: "Gamer", Icon: Gamepad2 }, { x: 325, y: 50, label: "Artist", Icon: Palette },
   { x: 80, y: 190, label: "Music", Icon: Music }, { x: 325, y: 190, label: "Reader", Icon: BookOpen }]} />;
 export const SetupArt = () => <Diagram center={Terminal} nodes={[
-  { x: 75, y: 55, label: "Category", Icon: Folder }, { x: 325, y: 55, label: "Join to Create", Icon: Volume2 }, { x: 200, y: 200, label: "Control Panel", Icon: LayoutGrid }]} />;
+  { x: 75, y: 55, label: "Category", Icon: Folder }, { x: 325, y: 55, label: "Join to Create", Icon: Volume2 }, { x: 200, y: 200, label: "Interface", Icon: LayoutGrid }]} />;
 export const PermissionsArt = () => <Diagram center={Mic} nodes={[
   { x: 80, y: 55, label: "@friend", Icon: Check, tone: ok }, { x: 325, y: 55, label: "@troll", Icon: X, tone: bad }, { x: 200, y: 200, label: "@guest", Icon: Check, tone: ok }]} />;
 export const RequirementsArt = () => <Diagram center={Gift} nodes={[
