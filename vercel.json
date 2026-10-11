@@ -1,3 +1,7 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/commands", "destination": "https://bucket.stains.rocks/api/commands" },
+    { "source": "/api/status", "destination": "https://bucket.stains.rocks/api/status" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
