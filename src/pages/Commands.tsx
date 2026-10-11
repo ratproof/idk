@@ -48,41 +48,41 @@ export default function Commands() {
   }, [data, active, dq]);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-24">
+    <main className="mx-auto max-w-[1200px] px-4 pb-24 pt-28">
       <h1 className="text-3xl font-semibold">Commands</h1>
-      {data && <p className="mt-1 text-zinc-400">{totalCount(data)} commands</p>}
+      {data && <p className="mt-1 text-muted">{totalCount(data)} commands</p>}
       <div className="relative mt-6">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-500" aria-hidden />
+        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted" aria-hidden />
         <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search commands"
           placeholder='Search commands… (press "/")'
-          className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 outline-none focus-visible:border-accent" />
+          className="w-full rounded-[10px] border border-line bg-surface-1 py-3 pl-10 pr-3 placeholder:text-muted" />
       </div>
       <div className="mt-2"><UsageLegend /></div>
 
-      {isLoading && <div className="mt-8 space-y-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-white/5" />)}</div>}
+      {isLoading && <div className="mt-8 space-y-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-20 animate-pulse rounded-[6px] bg-surface-1" />)}</div>}
       {isError && (
-        <div className="mt-8 rounded-xl border border-white/10 p-8 text-center">
+        <div className="mt-8 rounded-[12px] border border-line p-8 text-center">
           <p>Couldn't load commands.</p>
-          <button onClick={() => refetch()} className="mt-3 rounded-lg bg-accent px-4 py-2">Retry</button>
+          <button onClick={() => refetch()} className="btn btn-accent mt-3">Retry</button>
         </div>
       )}
 
       {data && (
-        <div className="mt-8 grid gap-8 md:grid-cols-[200px_1fr]">
-          <nav aria-label="Command groups" className="flex gap-2 overflow-x-auto md:sticky md:top-24 md:flex-col md:self-start">
+        <div className="mt-8 grid gap-8 md:grid-cols-[200px_1fr] md:gap-12">
+          <nav aria-label="Command groups" className="flex gap-4 overflow-x-auto md:sticky md:top-24 md:flex-col md:gap-0 md:self-start">
             {[{ slug: "all", name: "All", count: totalCount(data) }, ...data].map((g) => (
               <button key={g.slug} onClick={() => { setActive(g.slug); history.replaceState(null, "", g.slug === "all" ? "#" : `#${g.slug}`); }}
-                className={`flex shrink-0 items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-sm ${active === g.slug ? "bg-white/10" : "text-zinc-400 hover:bg-white/5"}`}>
-                {g.name}<span className="text-xs text-zinc-500">{g.count}</span>
+                className={`flex shrink-0 items-center justify-between gap-3 py-1.5 text-sm md:border-l-2 md:pl-3 ${active === g.slug ? "text-accent-soft md:border-accent" : "text-muted hover:text-fg md:border-transparent"}`}>
+                {g.name}<span className="text-xs text-muted">{g.count}</span>
               </button>
             ))}
           </nav>
-          <div className="space-y-10">
-            {groups.length === 0 && <p className="text-center text-zinc-500">No commands match "{q}".</p>}
+          <div className="space-y-12">
+            {groups.length === 0 && <p className="text-center text-muted">No commands match "{q}".</p>}
             {groups.map((g) => (
               <section key={g.slug} id={g.slug} className="scroll-mt-24">
-                <h2 className="mb-3 text-xl font-medium">{g.name}</h2>
-                <div className="space-y-3">
+                <h2 className="mb-1 border-b border-line pb-3 text-xl font-semibold">{g.name}</h2>
+                <div>
                   {g.commands.map((c) => <CommandCard key={c.name} cmd={c} highlighted={hash === slugify(c.name)} />)}
                 </div>
               </section>

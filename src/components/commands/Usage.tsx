@@ -1,17 +1,15 @@
 import { Fragment } from "react";
 
-// <required> accent, [optional] muted, [x=default] muted with highlighted default
+// <required> normal, [optional] muted, [x=default] muted with the default shown in normal text
 export function Usage({ text }: { text: string }) {
   const parts = text.split(/(<[^>]+>|\[[^\]]+\])/g);
   return (
-    <code className="font-mono text-sm">
+    <code className="font-mono text-sm text-fg">
       {parts.map((p, i) => {
-        if (p.startsWith("<")) return <span key={i} className="text-accent-soft">{p}</span>;
         if (p.startsWith("[")) {
           const m = p.match(/^\[([^=\]]+)=([^\]]+)\]$/);
-          return m ? (
-            <span key={i} className="text-zinc-500">[{m[1]}=<span className="text-emerald-300">{m[2]}</span>]</span>
-          ) : <span key={i} className="text-zinc-500">{p}</span>;
+          return m ? <span key={i} className="text-muted">[{m[1]}=<span className="text-fg">{m[2]}</span>]</span>
+                   : <span key={i} className="text-muted">{p}</span>;
         }
         return <Fragment key={i}>{p}</Fragment>;
       })}
@@ -20,7 +18,5 @@ export function Usage({ text }: { text: string }) {
 }
 
 export const UsageLegend = () => (
-  <p className="text-xs text-zinc-500">
-    <span className="text-accent-soft">&lt;required&gt;</span> · <span>[optional]</span> · [arg=<span className="text-emerald-300">default</span>]
-  </p>
+  <p className="text-xs text-muted">&lt;required&gt; · <span>[optional]</span> · [arg=default]</p>
 );

@@ -1,44 +1,39 @@
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { slugify, type Command } from "@/lib/api";
 import { Usage } from "./Usage";
 import { CopyButton } from "./CopyButton";
 
-function UsageRow({ c }: { c: Command }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2">
-      <Usage text={c.usage} />
-      <CopyButton text={c.usage} />
-    </div>
-  );
-}
+const UsageBlock = ({ c }: { c: Command }) => (
+  <div className="group mt-2 flex items-center justify-between gap-2 rounded-[6px] border border-line bg-surface-1 px-3 py-2">
+    <Usage text={c.usage} /><CopyButton text={c.usage} />
+  </div>
+);
 
+// A documentation-style row, not a card.
 export function CommandCard({ cmd, highlighted }: { cmd: Command; highlighted: boolean }) {
   const [open, setOpen] = useState(highlighted);
   const id = slugify(cmd.name);
-  const hasSubs = cmd.subcommands.length > 0;
+  const subs = cmd.subcommands.length;
   return (
-    <div id={id} className={`scroll-mt-24 rounded-xl border bg-white/[0.03] p-4 backdrop-blur transition-colors ${highlighted ? "border-accent/70" : "border-white/10"}`}>
-      <div className="flex flex-wrap items-center gap-2">
-        <a href={`#${id}`} className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-sm">{cmd.name}</a>
-        {cmd.aliases.map((a) => (
-          <span key={a} className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-zinc-400">{a}</span>
-        ))}
-        {hasSubs && (
-          <button aria-expanded={open} aria-label="Toggle subcommands" onClick={() => setOpen(!open)} className="ml-auto text-zinc-400">
-            <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+    <div id={id} className={`scroll-mt-24 border-b border-line py-5 ${highlighted ? "bg-surface-1" : ""}`}>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <a href={`#${id}`} className="font-mono font-medium">{cmd.name}</a>
+        {cmd.aliases.length > 0 && <span className="text-sm text-muted">aliases: {cmd.aliases.join(", ")}</span>}
+        {subs > 0 && (
+          <button aria-expanded={open} onClick={() => setOpen(!open)} className="ml-auto text-sm text-muted hover:text-fg">
+            {open ? "Hide" : "Show"} {subs} subcommand{subs > 1 ? "s" : ""}
           </button>
         )}
       </div>
-      <p className="mt-2 text-sm text-zinc-400">{cmd.description || <span className="text-zinc-600">No description yet</span>}</p>
-      <div className="mt-3"><UsageRow c={cmd} /></div>
-      {hasSubs && open && (
-        <div className="mt-3 space-y-2 border-l border-white/10 pl-3">
+      {cmd.description && <p className="mt-1 text-[15px] text-muted">{cmd.description}</p>}
+      <UsageBlock c={cmd} />
+      {subs > 0 && open && (
+        <div className="ml-4 mt-3 border-l border-line pl-4">
           {cmd.subcommands.map((s) => (
-            <div key={s.name} id={slugify(s.name)} className="scroll-mt-24">
-              <span className="font-mono text-xs text-zinc-300">{s.name}</span>
-              {s.description && <p className="text-xs text-zinc-500">{s.description}</p>}
-              <UsageRow c={s} />
+            <div key={s.name} id={slugify(s.name)} className="scroll-mt-24 py-3">
+              <span className="font-mono text-sm font-medium">{s.name}</span>
+              {s.description && <p className="text-sm text-muted">{s.description}</p>}
+              <UsageBlock c={s} />
             </div>
           ))}
         </div>

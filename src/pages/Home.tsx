@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import Hero from "@/components/landing/Hero";
-import { moderation, voicemaster, giveaways } from "@/components/landing/BentoSection";
+import { moderation, voicemaster, giveaways } from "@/components/landing/bentoConfig";
 
 // below-the-fold: lazy chunks
 const SocialProof = lazy(() => import("@/components/landing/SocialProof"));

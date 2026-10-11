@@ -7,5 +7,5 @@ export const HIDDEN_GROUPS = ["CDN", "Help"]; // case-insensitive
 
 export const STATS: { servers: number; users: number } | null = null;
 export const SHOWCASE_SERVERS: { name: string; iconUrl: string; members: number; badge?: string }[] = [];
-export const TESTIMONIALS: { quote: string; author: string; role: string; serverName: string; serverIconUrl: string }[] = [];
+export const TESTIMONIALS: { quote: string; author: string; role: string; serverName: string; serverIconUrl: string; serverMembers?: number; authorAvatarUrl?: string }[] = [];
 export const PREMIUM_PERKS: string[] = [];

@@ -1,31 +1,29 @@
-import { Mic, Languages, UserCircle, Info, Terminal, Palette, Smile } from "lucide-react";
-import { Reveal } from "@/components/ui/Reveal";
-
+import { Link } from "react-router-dom";
 const feats = [
-  { t: "Text-to-speech", d: "6 voices to pick from", Icon: Mic },
-  { t: "Translation", d: "Translate messages instantly", Icon: Languages },
-  { t: "Avatar & banner lookup", d: "Grab any user's images", Icon: UserCircle },
-  { t: "Server & member info", d: "Quick stats and details", Icon: Info },
-  { t: "Custom prefix", d: "Use whatever prefix you like", Icon: Terminal },
-  { t: "Customize the bot", d: "Your own avatar, banner and bio", Icon: Palette },
-  { t: "Fun commands", d: "Games and extras for chat", Icon: Smile },
+  ["Text to Speech", "Read messages aloud in a voice channel with 6 voices."],
+  ["Translation", "Translate any message into another language."],
+  ["Avatar and Banner", "Look up any member's avatar and banner."],
+  ["Server Info", "See details about your server and its members."],
+  ["Custom Prefix", "Pick the prefix that fits your server."],
+  ["Custom Bot Profile", "Change the bot's avatar, banner and bio."],
+  ["Fun Commands", "Small games and extras for chat."],
 ];
 export default function MoreFeatures() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20">
-      <Reveal>
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">And more</p>
-        <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">Countless more features</h2>
-      </Reveal>
-      <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
-        {feats.map(({ t, d, Icon }) => (
-          <div key={t} className="bg-[#09090b] p-6 transition-colors hover:bg-white/[0.03]">
-            <Icon className="h-5 w-5 text-accent" aria-hidden />
-            <h3 className="mt-4 font-medium">{t}</h3>
-            <p className="mt-1 text-sm text-zinc-500">{d}</p>
+    <section className="mx-auto max-w-[1200px] px-4 py-[72px] md:py-[120px]">
+      <div className="text-center">
+        <h2>Countless More Features</h2>
+        <p className="mx-auto mt-3 max-w-[60ch] text-muted">The smaller things you will reach for every day.</p>
+      </div>
+      <div className="mt-12 grid overflow-hidden rounded-[24px] border border-line sm:grid-cols-2 lg:grid-cols-3">
+        {feats.map(([t, d]) => (
+          <div key={t} className="-mb-px -mr-px border-b border-r border-line p-7">
+            <h3 className="font-semibold">{t}</h3>
+            <p className="mt-1.5 text-[15px] text-muted">{d}</p>
           </div>
         ))}
       </div>
+      <p className="mt-6 text-center"><Link to="/commands" className="link text-sm">All commands</Link></p>
     </section>
   );
 }
