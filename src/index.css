@@ -241,3 +241,11 @@ body::before {
     radial-gradient(1px 1px at 22% 90%, #ffffff44, transparent),
     radial-gradient(1.5px 1.5px at 58% 38%, #6d91d433, transparent);
 }
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
