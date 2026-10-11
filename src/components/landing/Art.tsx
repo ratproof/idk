@@ -41,11 +41,11 @@ export const FilterDiagram = () => (
 );
 export const ShieldArt = () => (
   <svg viewBox="0 0 260 220" className="mx-auto h-56" aria-hidden>
-    <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffc2b0" /><stop offset="1" stopColor="#7a2410" /></linearGradient></defs>
+    <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#cfe0ff" /><stop offset="1" stopColor="#14306b" /></linearGradient></defs>
     <path d="M20 40H240M20 190H240M60 8V212M200 8V212" stroke="#fff" strokeOpacity=".16" strokeDasharray="2 4" fill="none" />
-    <path d="M130 22 192 44V112C192 150 164 176 130 190 96 176 68 150 68 112V44Z" fill="url(#sg)" stroke="#2a1410" strokeWidth="8" />
-    <circle cx="130" cy="96" r="14" fill="none" stroke="#1a0c08" strokeWidth="6" />
-    <path d="M130 110V152M130 130H144M130 146H142" stroke="#1a0c08" strokeWidth="6" strokeLinecap="round" fill="none" />
+    <path d="M130 22 192 44V112C192 150 164 176 130 190 96 176 68 150 68 112V44Z" fill="url(#sg)" stroke="#10203f" strokeWidth="8" />
+    <circle cx="130" cy="96" r="14" fill="none" stroke="#0a1426" strokeWidth="6" />
+    <path d="M130 110V152M130 130H144M130 146H142" stroke="#0a1426" strokeWidth="6" strokeLinecap="round" fill="none" />
   </svg>
 );
 export const AutoroleArt = () => <Diagram center={UserPlus} nodes={[
@@ -73,7 +73,7 @@ export const ManageArt = () => (
 );
 
 const tiles: [string, LucideIcon][] = [["Lock", Lock], ["Unlock", Unlock], ["Limit", Users], ["Rename", Pencil], ["Claim", Crown], ["Permit", UserCheck], ["Reject", UserX], ["Hide", EyeOff]];
-const Avatars = () => <span className="flex -space-x-2" aria-hidden>{["#ff7a52", "#7a2410", "#ffb4a1"].map((c) => <i key={c} className="h-6 w-6 rounded-full border-2 border-[#15151a]" style={{ background: c }} />)}</span>;
+const Avatars = () => <span className="flex -space-x-2" aria-hidden>{["#6aa0ff", "#14306b", "#a9c8ff"].map((c) => <i key={c} className="h-6 w-6 rounded-full border-2 border-[#15151a]" style={{ background: c }} />)}</span>;
 export const PanelArt = () => (
   <div className={panel}>
     <div className="flex items-center justify-between">
