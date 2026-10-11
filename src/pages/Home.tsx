@@ -12,7 +12,7 @@ const FinalCTA = lazy(() => import("@/components/landing/FinalCTA"));
 
 // orange glow running down the whole page: [side, top%, size, color]
 const glows: ["l" | "r", number, string, string][] = [
-  ["r", 14, "34rem", "bg-accent"], ["l", 30, "40rem", "bg-accent-deep"], ["r", 46, "38rem", "bg-accent"],
+  ["l", 2, "38rem", "bg-accent"], ["r", 12, "34rem", "bg-accent-deep"], ["l", 30, "40rem", "bg-accent-deep"], ["r", 46, "38rem", "bg-accent"],
   ["l", 62, "40rem", "bg-accent"], ["r", 78, "36rem", "bg-accent-deep"], ["l", 92, "34rem", "bg-accent"],
 ];
 

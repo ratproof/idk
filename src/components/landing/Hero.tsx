@@ -7,12 +7,7 @@ import { G } from "@/components/ui/SectionHead";
 export default function Hero() {
   const { data } = useCommands();
   return (
-    <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden px-4 pt-16 text-center">
-      <div aria-hidden className="absolute inset-0">
-        <div className="blob -left-24 top-[10%] h-[28rem] w-[28rem] bg-accent" />
-        <div className="blob bottom-[-10%] right-[5%] h-96 w-96 bg-accent-deep" style={{ animationDelay: "-9s" }} />
-        <div className="grain" />
-      </div>
+    <section className="relative flex min-h-[90vh] items-center justify-center px-4 pt-16 text-center">
       <div className="relative mx-auto max-w-3xl">
         <h1 className="fade-in">Moderation, <G>voice channels</G> and <G>giveaways</G> for your server.</h1>
         <p className="fade-in mx-auto mt-6 max-w-[52ch] text-lg text-muted" style={{ animationDelay: ".1s" }}>
