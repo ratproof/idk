@@ -60,7 +60,11 @@ export async function fetchCommands(): Promise<Group[]> {
 
 export const totalCount = (groups: Group[]) => groups.reduce((n, g) => n + g.count, 0);
 
-export interface BotStatus { guilds: number; users: number; prefix: string; avatar_url: string | null }
+export interface ShardStatus { id: number; ping: number | null; guilds?: number; users?: number; connected?: boolean }
+export interface BotStatus {
+  guilds: number; users: number; prefix: string; avatar_url: string | null;
+  uptime: number; ping: number; shard_count: number; shards: ShardStatus[] | null;
+}
 export async function fetchStatus(): Promise<BotStatus> {
   const res = await fetch(STATUS_URL);
   if (!res.ok) throw new Error(`API ${res.status}`);
