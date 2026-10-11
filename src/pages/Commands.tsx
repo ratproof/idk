@@ -1,13 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Crown, Gift, Hammer, LayoutGrid, Music, Paperclip, Search, Settings, Smile, Terminal, Wrench, type LucideIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import { useCommands } from "@/hooks/useCommands";
 import { slugify, totalCount, type Command } from "@/lib/api";
 import { CommandCard } from "@/components/commands/CommandCard";
-
-const icons: Record<string, LucideIcon> = {
-  all: LayoutGrid, configuration: Settings, giveaways: Gift, moderation: Hammer, premium: Crown,
-  lastfm: Music, misc: Paperclip, utility: Wrench, fun: Smile,
-};
+import { GroupIcon } from "@/components/commands/GroupIcons";
 
 function useDebounced<T>(v: T, ms = 200) {
   const [d, setD] = useState(v);
@@ -21,9 +17,11 @@ export default function Commands() {
   const [q, setQ] = useState("");
   const [active, setActive] = useState("all");
   const [hash, setHash] = useState(() => location.hash.slice(1));
+  const [can, setCan] = useState({ l: false, r: false });
   const input = useRef<HTMLInputElement>(null);
   const tabs = useRef<HTMLDivElement>(null);
   const scrolledFor = useRef("");
+  const drag = useRef({ down: false, moved: false, x: 0, left: 0 });
   const dq = useDebounced(q).toLowerCase().trim();
 
   useEffect(() => {
@@ -47,6 +45,14 @@ export default function Commands() {
     if (el) { scrolledFor.current = hash; requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "center" })); }
   }, [data, hash, active]);
 
+  // back/forward button visibility
+  const update = useCallback(() => {
+    const el = tabs.current;
+    if (el) setCan({ l: el.scrollLeft > 4, r: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+  }, []);
+  useEffect(() => { update(); addEventListener("resize", update); return () => removeEventListener("resize", update); }, [data, update]);
+  useEffect(() => { document.getElementById(`tab-${active}`)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, [active]);
+
   const cards = useMemo(() => {
     if (!data) return [];
     const src = dq || active === "all" ? data : data.filter((g) => g.slug === active);
@@ -56,7 +62,23 @@ export default function Commands() {
 
   const tabList = data ? [{ slug: "all", name: "All", count: totalCount(data) }, ...data] : [];
   const pick = (slug: string) => { setActive(slug); history.replaceState(null, "", slug === "all" ? "#" : `#${slug}`); };
+  const nudge = (dir: 1 | -1) => tabs.current?.scrollBy({ left: dir * tabs.current.clientWidth * 0.6, behavior: "smooth" });
 
+  // mouse drag-to-scroll (touch uses native scrolling)
+  const onDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse" || !tabs.current) return;
+    drag.current = { down: true, moved: false, x: e.clientX, left: tabs.current.scrollLeft };
+  };
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d.down || !tabs.current) return;
+    const dx = e.clientX - d.x;
+    if (Math.abs(dx) > 5) d.moved = true;
+    if (d.moved) tabs.current.scrollLeft = d.left - dx;
+  };
+  const endDrag = () => { drag.current.down = false; };
+
+  const arrow = "absolute top-0 z-10 hidden h-full w-16 place-items-center text-fg sm:grid";
   return (
     <main className="mx-auto max-w-[1200px] px-4 pb-24 pt-28">
       <h1 className="text-4xl sm:text-5xl">Commands</h1>
@@ -68,24 +90,32 @@ export default function Commands() {
       </div>
 
       {data && (
-        <div className="relative mt-5">
-          <div ref={tabs} role="tablist" aria-label="Command groups" className="no-scrollbar flex gap-1 overflow-x-auto rounded-3xl border border-line bg-[#0e0e11] p-1.5 pr-14">
+        <div className="relative mt-5 overflow-hidden rounded-3xl border border-line bg-[#0e0e11]">
+          {can.l && (
+            <button aria-label="Previous groups" onClick={() => nudge(-1)} className={`${arrow} left-0 bg-gradient-to-r from-[#0e0e11] from-40% to-transparent`}>
+              <ArrowLeft className="h-6 w-6" />
+            </button>
+          )}
+          <div ref={tabs} role="tablist" aria-label="Command groups" onScroll={update}
+            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}
+            onClickCapture={(e) => { if (drag.current.moved) { e.stopPropagation(); e.preventDefault(); drag.current.moved = false; } }}
+            className="no-scrollbar flex cursor-grab select-none gap-1 overflow-x-auto p-1.5 active:cursor-grabbing">
             {tabList.map((g) => {
-              const Icon = icons[g.slug] ?? Terminal;
               const on = active === g.slug && !dq;
               return (
-                <button key={g.slug} role="tab" aria-selected={on} onClick={() => pick(g.slug)}
+                <button key={g.slug} id={`tab-${g.slug}`} role="tab" aria-selected={on} onClick={() => pick(g.slug)} draggable={false}
                   className={`flex shrink-0 items-center gap-2.5 rounded-2xl px-5 py-3.5 text-[15px] lowercase transition-colors ${on ? "bg-white/[0.07] text-fg" : "text-zinc-400 hover:text-fg"}`}>
-                  <Icon className="h-5 w-5" aria-hidden />{g.name}
+                  <GroupIcon slug={g.slug} className={`h-5 w-5 ${on ? "text-fg" : "text-[#8fa3ab]"}`} />{g.name}
                   <span className="rounded-lg bg-white/[0.07] px-2 py-0.5 text-sm">{g.count}</span>
                 </button>
               );
             })}
           </div>
-          <button aria-label="Scroll groups" onClick={() => tabs.current?.scrollBy({ left: 320, behavior: "smooth" })}
-            className="absolute right-0 top-0 grid h-full w-16 place-items-center rounded-r-3xl bg-gradient-to-l from-[#0e0e11] from-40% to-transparent text-fg">
-            <ChevronRight className="h-6 w-6" />
-          </button>
+          {can.r && (
+            <button aria-label="Next groups" onClick={() => nudge(1)} className={`${arrow} right-0 bg-gradient-to-l from-[#0e0e11] from-40% to-transparent`}>
+              <ArrowRight className="h-6 w-6" />
+            </button>
+          )}
         </div>
       )}
       <p className="mt-3 text-xs text-muted">Solid argument chips are required, dashed ones are optional.</p>
