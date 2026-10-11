@@ -1,7 +1,7 @@
 export const BOT_NAME = "stains";
-export const INVITE_URL = "https://discord.com/oauth2/authorize?client_id=YOUR_ID";
-export const SUPPORT_URL = "https://discord.gg/your-invite";
-export const DEFAULT_PREFIX = ";";
+export const INVITE_URL = "https://discord.com/oauth2/authorize?client_id=1544231023603224576;
+export const SUPPORT_URL = "https://discord.gg/vacations";
+export const DEFAULT_PREFIX = ",";
 export const API_URL = "https://bucket.stains.rocks/api/commands";
 export const STATUS_URL = "https://bucket.stains.rocks/api/status";
 export const HIDDEN_GROUPS = ["CDN", "Help"]; // case-insensitive
