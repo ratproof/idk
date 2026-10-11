@@ -13,13 +13,17 @@ const feats = [
 export default function MoreFeatures() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-20">
-      <h2 className="text-center text-3xl font-semibold sm:text-4xl">Countless more features</h2>
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {feats.map(({ t, d, Icon }, i) => (
-          <Reveal key={t} delay={i * 0.04}>
-            <div className="glass h-full rounded-xl p-5"><Icon className="h-6 w-6 text-violet-400" aria-hidden />
-              <h3 className="mt-3 font-medium">{t}</h3><p className="mt-1 text-sm text-zinc-400">{d}</p></div>
-          </Reveal>
+      <Reveal>
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">And more</p>
+        <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">Countless more features</h2>
+      </Reveal>
+      <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+        {feats.map(({ t, d, Icon }) => (
+          <div key={t} className="bg-[#09090b] p-6 transition-colors hover:bg-white/[0.03]">
+            <Icon className="h-5 w-5 text-accent" aria-hidden />
+            <h3 className="mt-4 font-medium">{t}</h3>
+            <p className="mt-1 text-sm text-zinc-500">{d}</p>
+          </div>
         ))}
       </div>
     </section>

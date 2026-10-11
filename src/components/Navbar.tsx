@@ -17,7 +17,7 @@ export default function Navbar() {
     f(); addEventListener("scroll", f, { passive: true });
     return () => removeEventListener("scroll", f);
   }, []);
-  const cls = "text-sm text-zinc-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-400 rounded";
+  const cls = "text-sm text-zinc-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded";
   return (
     <header className={`fixed inset-x-0 top-0 z-50 backdrop-blur-xl transition-colors ${scrolled ? "border-b border-white/10 bg-black/40" : "border-b border-transparent"}`}>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">

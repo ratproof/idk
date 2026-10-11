@@ -26,7 +26,7 @@ export default function SocialProof() {
       <img src={s.iconUrl} alt="" loading="lazy" width={40} height={40} className="h-10 w-10 rounded-full" />
       <div className="min-w-0"><div className="truncate text-sm font-medium">{s.name}</div>
         <div className="text-xs text-zinc-500">{s.members.toLocaleString()} members</div></div>
-      {s.badge && <span className="ml-auto rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] text-violet-300">{s.badge}</span>}
+      {s.badge && <span className="ml-auto rounded bg-accent/20 px-1.5 py-0.5 text-[10px] text-accent-soft">{s.badge}</span>}
     </div>
   );
   return (

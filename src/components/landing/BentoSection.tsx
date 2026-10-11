@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight, Check, Gift } from "lucide-react";
 import { useCommands } from "@/hooks/useCommands";
 import { Reveal } from "@/components/ui/Reveal";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -15,7 +16,7 @@ export function BentoSection({ eyebrow, title, subtitle, group, cards, flip }: B
   return (
     <section className="mx-auto max-w-6xl px-4 py-20">
       <Reveal>
-        <p className="text-sm font-medium uppercase tracking-widest text-violet-400">{eyebrow}</p>
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">{eyebrow}</p>
         <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">{title}</h2>
         <p className="mt-3 max-w-xl text-zinc-400">{subtitle}</p>
       </Reveal>
@@ -30,7 +31,7 @@ export function BentoSection({ eyebrow, title, subtitle, group, cards, flip }: B
           </Reveal>
         ))}
       </div>
-      {g && <Link to={`/commands#${g.slug}`} className="mt-6 inline-block text-sm text-violet-300 hover:text-white">{g.count}+ more commands →</Link>}
+      {g && <Link to={`/commands#${g.slug}`} className="mt-6 inline-block text-sm text-accent-soft hover:text-white">{g.count}+ more commands <ArrowRight className="ml-1 inline h-4 w-4" aria-hidden /></Link>}
     </section>
   );
 }
@@ -53,7 +54,7 @@ export const moderation: BentoProps = {
     { title: "Honeypot", desc: "A trap channel that catches spam bots and raiders.",
       visual: <BotMsg title="Honeypot triggered">Banned <b>spambot#0001</b> for posting in #do-not-post.</BotMsg> },
     { title: "Roles and automation", desc: "Autorole, reaction roles and join pings.",
-      visual: pills(["🎮 Gamer", "🎨 Artist", "🎵 Music", "Autorole: Member"]) },
+      visual: <div className="flex flex-wrap gap-2">{[["Gamer", "#5865f2"], ["Artist", "#e0457b"], ["Music", "#3ba55d"]].map(([n, c]) => <Btn key={n}><i className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: c }} />{n}</Btn>)}<Btn>Autorole: Member</Btn></div> },
   ],
 };
 export const voicemaster: BentoProps = {
@@ -63,7 +64,7 @@ export const voicemaster: BentoProps = {
     { title: "Control panel", desc: "Lock, unlock, limit, rename, claim, permit and reject from buttons.",
       visual: pills(["Lock", "Unlock", "Limit", "Rename", "Claim", "Permit", "Reject"]) },
     { title: "Easy setup", desc: "One command creates the category, join channel and panel.",
-      visual: <div className="space-y-3"><Code>;voicemaster setup</Code><BotMsg>Voicemaster is ready ✅</BotMsg></div> },
+      visual: <div className="space-y-3"><Code>;voicemaster setup</Code><BotMsg><span className="inline-flex items-center gap-1.5"><Check className="h-4 w-4 text-emerald-400" aria-hidden />Voicemaster is ready</span></BotMsg></div> },
     { title: "Your channel, your rules", desc: "Permit or reject specific members from your channel.",
       visual: <div className="flex flex-wrap gap-2"><Code>;vm permit @friend</Code><Code>;vm reject @troll</Code></div> },
   ],
@@ -77,6 +78,6 @@ export const giveaways: BentoProps = {
     { title: "Full control", desc: "Reroll, edit or end any giveaway.",
       visual: <div className="flex flex-wrap gap-2"><Code>;gw reroll</Code><Code>;gw edit</Code><Code>;gw end</Code></div> },
     { title: "Live giveaways", desc: "Entries and countdown update in real time.",
-      visual: <BotMsg title="🎉 Nitro giveaway">Ends in <Countdown /> · Entries: <b>128</b><div className="mt-2"><Btn>🎉 Enter</Btn></div></BotMsg> },
+      visual: <BotMsg title="Nitro giveaway">Ends in <Countdown /> · Entries: <b>128</b><div className="mt-2"><Btn><Gift className="mr-1.5 inline h-3.5 w-3.5" aria-hidden />Enter</Btn></div></BotMsg> },
   ],
 };

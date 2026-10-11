@@ -18,7 +18,7 @@ export function CommandCard({ cmd, highlighted }: { cmd: Command; highlighted: b
   const id = slugify(cmd.name);
   const hasSubs = cmd.subcommands.length > 0;
   return (
-    <div id={id} className={`scroll-mt-24 rounded-xl border bg-white/[0.03] p-4 backdrop-blur transition-colors ${highlighted ? "border-violet-400/70" : "border-white/10"}`}>
+    <div id={id} className={`scroll-mt-24 rounded-xl border bg-white/[0.03] p-4 backdrop-blur transition-colors ${highlighted ? "border-accent/70" : "border-white/10"}`}>
       <div className="flex flex-wrap items-center gap-2">
         <a href={`#${id}`} className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-sm">{cmd.name}</a>
         {cmd.aliases.map((a) => (

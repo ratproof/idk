@@ -55,7 +55,7 @@ export default function Commands() {
         <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-500" aria-hidden />
         <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search commands"
           placeholder='Search commands… (press "/")'
-          className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 outline-none focus-visible:border-violet-400" />
+          className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-3 outline-none focus-visible:border-accent" />
       </div>
       <div className="mt-2"><UsageLegend /></div>
 
@@ -63,7 +63,7 @@ export default function Commands() {
       {isError && (
         <div className="mt-8 rounded-xl border border-white/10 p-8 text-center">
           <p>Couldn't load commands.</p>
-          <button onClick={() => refetch()} className="mt-3 rounded-lg bg-violet-500 px-4 py-2">Retry</button>
+          <button onClick={() => refetch()} className="mt-3 rounded-lg bg-accent px-4 py-2">Retry</button>
         </div>
       )}
 
