@@ -3,16 +3,16 @@
 @theme {
   --font-sans: "Instrument Sans", system-ui, sans-serif;
 
-  --color-bg: #020b1b;
-  --color-surface-1: #07152b;
-  --color-surface-2: #0c1c35;
-  --color-line: rgb(180 200 230 / 0.09);
-  --color-fg: #f1f5fb;
-  --color-muted: #899bb5;
+  --color-bg: #050608;
+  --color-surface-1: #0a0b0f;
+  --color-surface-2: #111319;
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-fg: #f4f5f7;
+  --color-muted: #8b909b;
 
-  --color-accent: #7398d4;
-  --color-accent-soft: #b1c9ec;
-  --color-accent-deep: #203e6c;
+  --color-accent: #6d91d4;
+  --color-accent-soft: #a8bde0;
+  --color-accent-deep: #34558b;
 }
 
 :root {
@@ -33,15 +33,15 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: .55;
+  opacity: .45;
   background-size: 520px 520px;
   background-image:
-    radial-gradient(1.5px 1.5px at 12% 18%, #dce9ff77, transparent),
-    radial-gradient(1px 1px at 78% 8%, #ffffff66, transparent),
-    radial-gradient(1.5px 1.5px at 44% 62%, #b4c9e866, transparent),
-    radial-gradient(1px 1px at 90% 70%, #ffffff66, transparent),
-    radial-gradient(1px 1px at 25% 85%, #dce9ff66, transparent),
-    radial-gradient(1.5px 1.5px at 60% 35%, #ffffff55, transparent);
+    radial-gradient(1.5px 1.5px at 12% 18%, #ffffff66, transparent),
+    radial-gradient(1px 1px at 78% 8%, #a8bde066, transparent),
+    radial-gradient(1.5px 1.5px at 44% 62%, #ffffff55, transparent),
+    radial-gradient(1px 1px at 90% 70%, #a8bde055, transparent),
+    radial-gradient(1px 1px at 25% 85%, #ffffff44, transparent),
+    radial-gradient(1.5px 1.5px at 60% 35%, #6d91d444, transparent);
 }
 
 @layer base {
@@ -66,7 +66,7 @@ body::before {
 }
 
 .text-grad {
-  background: linear-gradient(90deg, #d4e2f7, #7398d4);
+  background: linear-gradient(90deg, #d8dce5, #7c9dd8);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -74,8 +74,8 @@ body::before {
 
 .bg-grad,
 .btn-accent {
-  background: linear-gradient(135deg, #a8c2e9, #6489c5);
-  color: #061124;
+  background: linear-gradient(135deg, #8ba9dc, #587bb8);
+  color: #080a0f;
   font-weight: 600;
 }
 
@@ -88,11 +88,11 @@ body::before {
 }
 
 .btn-accent {
-  box-shadow: 0 0 28px rgb(100 137 197 / .22);
+  box-shadow: 0 0 24px rgb(91 126 190 / .16);
 }
 
 .btn-outline {
-  border: 1px solid rgb(180 200 230 / .17);
+  border: 1px solid rgb(255 255 255 / .13);
   font-weight: 500;
 }
 
@@ -112,16 +112,16 @@ body::before {
   background:
     radial-gradient(
       110% 70% at 50% 125%,
-      rgb(82 123 190 / .13),
+      rgb(91 126 190 / .07),
       transparent 62%
     ),
-    #071329;
+    #0a0b0f;
   border: 1px solid var(--color-line);
   transition: border-color .3s;
 }
 
 .card:hover {
-  border-color: rgb(135 170 222 / .32);
+  border-color: rgb(109 145 212 / .28);
 }
 
 .icon-circle {
@@ -130,11 +130,11 @@ body::before {
   height: 4.5rem;
   width: 4.5rem;
   border-radius: 9999px;
-  border: 1px solid rgb(180 200 230 / .12);
+  border: 1px solid rgb(255 255 255 / .09);
   background: radial-gradient(
     circle at 50% 30%,
-    rgb(100 137 197 / .22),
-    #071329 75%
+    rgb(109 145 212 / .12),
+    #0a0b0f 75%
   );
 }
 
@@ -144,15 +144,15 @@ body::before {
   height: 3.5rem;
   width: 3.5rem;
   border-radius: 14px;
-  border: 1px solid rgb(135 170 222 / .27);
-  background: rgb(100 137 197 / .09);
+  border: 1px solid rgb(109 145 212 / .22);
+  background: rgb(109 145 212 / .06);
 }
 
 .blob {
   position: absolute;
   border-radius: 9999px;
   filter: blur(110px);
-  opacity: .28;
+  opacity: .17;
   animation: blob 20s ease-in-out infinite;
 }
 
@@ -234,10 +234,10 @@ body::before {
   pointer-events: none;
   background-size: 420px 420px;
   background-image:
-    radial-gradient(1.5px 1.5px at 10% 20%, #dce9ff88, transparent),
-    radial-gradient(1px 1px at 70% 12%, #ffffff77, transparent),
-    radial-gradient(1.5px 1.5px at 40% 70%, #b4c9e866, transparent),
-    radial-gradient(1px 1px at 88% 60%, #ffffff77, transparent),
-    radial-gradient(1px 1px at 22% 90%, #dce9ff66, transparent),
-    radial-gradient(1.5px 1.5px at 58% 38%, #ffffff55, transparent);
+    radial-gradient(1.5px 1.5px at 10% 20%, #ffffff66, transparent),
+    radial-gradient(1px 1px at 70% 12%, #a8bde055, transparent),
+    radial-gradient(1.5px 1.5px at 40% 70%, #ffffff44, transparent),
+    radial-gradient(1px 1px at 88% 60%, #a8bde055, transparent),
+    radial-gradient(1px 1px at 22% 90%, #ffffff44, transparent),
+    radial-gradient(1.5px 1.5px at 58% 38%, #6d91d433, transparent);
 }
