@@ -21,7 +21,7 @@ export default function MoreFeatures() {
     <section className="mx-auto max-w-[1200px] px-4 py-[72px] md:py-[120px]">
       <div aria-hidden className="mb-8 hidden items-start justify-center gap-5 sm:flex">
         {arc.map(([Icon, s, y], i) => (
-          <span key={i} className="grid place-items-center rounded-full border border-white/10 bg-[radial-gradient(circle_at_50%_30%,rgb(255_90_54/.2),#0e0e11_75%)]" style={{ width: s, height: s, marginTop: y }}>
+          <span key={i} className="grid place-items-center rounded-full border border-white/10 bg-[radial-gradient(circle_at_50%_30%,rgb(79_140_255/.2),#0e0e11_75%)]" style={{ width: s, height: s, marginTop: y }}>
             <Icon className="text-accent-soft" style={{ width: s * 0.42, height: s * 0.42 }} />
           </span>
         ))}
