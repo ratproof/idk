@@ -1,9 +1,13 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { INVITE_URL, SUPPORT_URL } from "@/config";
-import ExternalRedirect from "@/components/ExternalRedirect";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
+function ExternalRedirect({ to }: { to: string }) {
+  useEffect(() => { window.location.replace(to); }, [to]);
+  return <p className="px-4 py-28 text-center text-muted">Redirecting… <a href={to} className="text-accent-soft hover:underline">Click here if nothing happens</a></p>;
+}
+
 const Commands = lazy(() => import("@/pages/Commands"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
