@@ -1,5 +1,4 @@
 export const BOT_NAME = "stains";
-export const BOT_AVATAR = "/avatar.jpg";
 export const INVITE_URL = "https://discord.com/oauth2/authorize?client_id=YOUR_ID";
 export const SUPPORT_URL = "https://discord.gg/your-invite";
 export const DEFAULT_PREFIX = ";";

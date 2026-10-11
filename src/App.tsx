@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
 const Commands = lazy(() => import("@/pages/Commands"));
 const Legal = lazy(() => import("@/pages/Legal"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/commands" element={<Commands />} />
           <Route path="/terms" element={<Legal kind="terms" />} />
           <Route path="/privacy" element={<Legal kind="privacy" />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </Suspense>
