@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Check } from "lucide-react";
 import { BotMsg, Btn, Cmd } from "@/components/ui/DiscordBits";
+import { FilterDiagram, ShieldArt } from "./Art";
 
 const row = (items: string[]) => <div className="mt-2 flex flex-wrap gap-2">{items.map((i) => <Btn key={i}>{i}</Btn>)}</div>;
 const mocks: Record<string, ReactNode> = {
@@ -19,6 +20,8 @@ const mocks: Record<string, ReactNode> = {
 // Loads /screenshots/<name>.png, falls back to a code-built mockup when it is missing.
 export function Shot({ name, alt }: { name: string; alt: string }) {
   const [failed, setFailed] = useState(false);
+  const art: Record<string, ReactNode> = { "purge-filters": <FilterDiagram />, honeypot: <ShieldArt /> };
+  if (art[name]) return <div className="flex min-h-56 items-end justify-center pb-6">{art[name]}</div>;
   return (
     <div className="shot-fade overflow-hidden rounded-t-[12px] border border-b-0 border-line bg-[#313338]">
       <div className="aspect-[16/10] w-full">

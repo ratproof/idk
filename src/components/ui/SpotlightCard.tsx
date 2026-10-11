@@ -6,10 +6,10 @@ export function SpotlightCard({ children, className = "" }: { children: ReactNod
     e.currentTarget.style.setProperty("--y", `${e.clientY - r.top}px`);
   };
   return (
-    <div onMouseMove={move} className={`glass group relative overflow-hidden rounded-xl ${className}`}>
+    <div onMouseMove={move} className={`card group relative h-full overflow-hidden rounded-3xl ${className}`}>
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: "radial-gradient(320px circle at var(--x) var(--y), rgba(255,90,54,.14), transparent 60%)" }} />
-      <div className="relative h-full">{children}</div>
+        style={{ background: "radial-gradient(340px circle at var(--x) var(--y), rgb(255 90 54 / .13), transparent 60%)" }} />
+      <div className="relative flex h-full flex-col">{children}</div>
     </div>
   );
 }

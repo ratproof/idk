@@ -7,7 +7,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const l = "text-sm text-muted hover:text-fg";
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-bg">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-bg/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4">
         <Link to="/" className="text-lg font-semibold tracking-tight">{BOT_NAME}</Link>
         <nav aria-label="Main" className="hidden items-center gap-6 md:flex">

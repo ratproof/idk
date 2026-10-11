@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Heart } from "lucide-react";
 import { TESTIMONIALS } from "@/config";
+import { G, SectionHead } from "@/components/ui/SectionHead";
 
 export default function Testimonials() {
   const [i, setI] = useState(0);
@@ -7,8 +9,8 @@ export default function Testimonials() {
   const t = TESTIMONIALS[Math.min(i, TESTIMONIALS.length - 1)];
   return (
     <section className="mx-auto max-w-[1200px] px-4 py-[72px] md:py-[120px]">
-      <h2 className="mx-auto max-w-2xl text-center">Loved and Trusted by the Largest Servers</h2>
-      <figure className="mt-12 grid gap-8 rounded-[24px] border border-line bg-surface-1 p-8 md:grid-cols-[240px_1fr] md:p-12" aria-live="polite">
+      <SectionHead icon={Heart}>Loved and <G>Trusted</G> by the Largest <G>Servers</G></SectionHead>
+      <figure className="mt-12 grid gap-8 card rounded-3xl p-8 md:grid-cols-[240px_1fr] md:p-12" aria-live="polite">
         <div className="flex items-center gap-4 md:flex-col md:items-start">
           <img src={t.serverIconUrl} alt="" width={64} height={64} className="h-16 w-16 rounded-full" />
           <div><div className="font-semibold">{t.serverName}</div>
