@@ -12,6 +12,7 @@ export default function Navbar() {
         <Link to="/" className="justify-self-start text-lg font-semibold tracking-tight">{BOT_NAME}</Link>
         <nav aria-label="Main" className="hidden items-center gap-10 rounded-[22px] border border-white/[0.07] bg-[#121413]/80 px-9 py-3.5 backdrop-blur-xl md:flex">
           <Link to="/commands" className={l}>Commands</Link>
+          <Link to="/status" className={l}>Status</Link>
           <a href={SUPPORT_URL} className={l}>Support</a>
         </nav>
         <div className="col-start-3 flex items-center justify-self-end">
@@ -24,6 +25,7 @@ export default function Navbar() {
       {open && (
         <nav aria-label="Mobile" className="mx-4 flex flex-col gap-4 rounded-[22px] border border-white/[0.07] bg-[#121413]/95 p-6 backdrop-blur-xl md:hidden">
           <Link to="/commands" onClick={() => setOpen(false)} className={l}>Commands</Link>
+          <Link to="/status" onClick={() => setOpen(false)} className={l}>Status</Link>
           <a href={SUPPORT_URL} className={l}>Support</a>
           <a href={INVITE_URL} className="btn btn-accent justify-center">Invite</a>
         </nav>
