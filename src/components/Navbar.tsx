@@ -9,7 +9,9 @@ export default function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50">
       <div className="mx-auto grid h-20 max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4">
-        <Link to="/" className="justify-self-start text-lg font-semibold tracking-tight">{BOT_NAME}</Link>
+        <Link to="/" aria-label={`${BOT_NAME} home`} className="justify-self-start">
+          <img src="/favicon.png" alt={BOT_NAME} width={40} height={40} className="h-10 w-10 rounded-full" />
+        </Link>
         <nav aria-label="Main" className="hidden items-center gap-10 rounded-[22px] border border-white/[0.07] bg-[#121413]/80 px-9 py-3.5 backdrop-blur-xl md:flex">
           <Link to="/commands" className={l}>Commands</Link>
           <Link to="/status" className={l}>Status</Link>
