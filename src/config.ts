@@ -1,9 +1,10 @@
 export const BOT_NAME = "stains";
 export const INVITE_URL = "https://discord.com/oauth2/authorize?client_id=1544231023603224576";
 export const SUPPORT_URL = "https://discord.gg/vacations";
-export const DEFAULT_PREFIX = ",";
-export const API_URL = "https://bucket.stains.rocks/api/commands";
-export const STATUS_URL = "https://bucket.stains.rocks/api/status";
+export const CONTACT_EMAIL = "contact@stains.rocks; // TODO: your real contact address
+export const DEFAULT_PREFIX = ";";
+export const API_URL = "/api/commands"; // proxied to bucket.stains.rocks (vercel.json / vite.config.ts)
+export const STATUS_URL = "/api/status";
 export const HIDDEN_GROUPS = ["CDN", "Help"]; // case-insensitive
 
 export const STATS: { servers: number; users: number } | null = null;
