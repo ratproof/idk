@@ -9,6 +9,7 @@ function ExternalRedirect({ to }: { to: string }) {
 }
 
 const Commands = lazy(() => import("@/pages/Commands"));
+const Status = lazy(() => import("@/pages/Status"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -19,6 +20,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/commands" element={<Commands />} />
+          <Route path="/status" element={<Status />} />
           <Route path="/help" element={<Navigate to="/commands" replace />} />
           <Route path="/support" element={<ExternalRedirect to={SUPPORT_URL} />} />
           <Route path="/invite" element={<ExternalRedirect to={INVITE_URL} />} />
