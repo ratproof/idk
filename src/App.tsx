@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { INVITE_URL, SUPPORT_URL } from "@/config";
 import Layout from "@/components/Layout";
+import BackToTop from "@/components/BackToTop";
 import Home from "@/pages/Home";
 function ExternalRedirect({ to }: { to: string }) {
   useEffect(() => { window.location.replace(to); }, [to]);
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
+      <BackToTop />
     </Suspense>
   );
 }
