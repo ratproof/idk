@@ -6,6 +6,8 @@
   --color-accent: #4f8cff; --color-accent-soft: #a9c8ff; --color-accent-deep: #14306b;
 }
 :root { color-scheme: dark; }
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
 body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); line-height: 1.6; -webkit-font-smoothing: antialiased; }
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .7; background-size: 520px 520px;
   background-image: radial-gradient(1.5px 1.5px at 12% 18%, #fff7, transparent), radial-gradient(1px 1px at 78% 8%, #fff6, transparent), radial-gradient(1.5px 1.5px at 44% 62%, #fff6, transparent),
