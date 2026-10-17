@@ -1,13 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { BOT_NAME, INVITE_URL, SUPPORT_URL } from "@/config";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    onScroll(); // correct state on first load / refresh mid-page
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // never hide while the mobile menu is open
+  const hidden = scrolled && !open;
+
   const l = "font-medium text-fg transition-colors hover:text-accent-soft";
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
+    <header
+      className={`fixed inset-x-0 top-0 z-50 transition-transform duration-300 ${
+        hidden ? "-translate-y-full" : ""
+      }`}
+    >
       <div className="mx-auto grid h-20 max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4">
         <Link to="/" aria-label={`${BOT_NAME} home`} className="justify-self-start">
           <img src="/favicon.png" alt={BOT_NAME} width={40} height={40} className="h-10 w-10 rounded-full" />
