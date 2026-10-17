@@ -34,11 +34,11 @@ export default function BackToTop() {
       onClick={toTop}
       aria-label="Back to top"
       tabIndex={show ? 0 : -1}
-      className={`fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full border border-white/[0.07] bg-[#121413]/80 text-muted backdrop-blur-xl transition-all duration-300 hover:text-fg ${
-        show ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
+      className={`fixed right-6 top-1/2 z-50 grid h-22 w-22 -translate-y-1/2 place-items-center rounded-full border border-white/[0.07] bg-[#121413]/80 text-muted backdrop-blur-xl transition-all duration-300 hover:text-fg ${
+        show ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-4 opacity-0"
       }`}
     >
-      <ArrowUp size={26} strokeWidth={2} />
+      <ArrowUp size={40} strokeWidth={2} />
     </button>
   );
 }
