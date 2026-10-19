@@ -30,6 +30,7 @@ export default function App() {
           <Route path="/tos" element={<Navigate to="/terms" replace />} />
           <Route path="/privacy" element={<Legal kind="privacy" />} />
           <Route path="/embeds" element={<EmbedBuilder />} />
+          <Route path="/embed" element={<Navigate to="/embeds" replace />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
