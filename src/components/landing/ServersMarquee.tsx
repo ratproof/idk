@@ -19,7 +19,7 @@ export default function ServersMarquee({ duration = 40 }: { duration?: number })
   const [servers, setServers] = useState<Server[]>([]);
 
   useEffect(() => {
-    fetch("/api/servers")
+    fetch("https://bucket.stains.rocks/api/servers")
       .then((r) => r.json())
       .then((d) => {
         console.log("servers:", d);
