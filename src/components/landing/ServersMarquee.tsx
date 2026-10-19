@@ -21,6 +21,8 @@ const icon = (s: Server) => {
   if (i.startsWith("http")) return i.replace(/\?size=\d+/, "") + (i.includes("?") ? "" : "?size=128");
   return `https://cdn.discordapp.com/icons/${s.id}/${i}.${i.startsWith("a_") ? "gif" : "png"}?size=128`;
 };
+// only show the best one: discoverable > boosted > community
+const badge = (s: Server) => (s.discoverable ? "discoverable" : s.boosted ? "boosted" : s.community ? "community" : null);
 const fmt = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 
 // put the official icons in public/badges/ as community.svg, discoverable.svg, boosted.svg
@@ -76,9 +78,7 @@ export default function ServersMarquee({ duration = 40 }: { duration?: number })
               <div className="leading-tight">
                 <div className="flex items-center gap-1.5">
                   <span className="whitespace-nowrap text-sm font-medium">{s.name}</span>
-                  {s.community && <Badge k="community" title="Community" />}
-                  {s.discoverable && <Badge k="discoverable" title="Discoverable" />}
-                  {s.boosted && <Badge k="boosted" title="Boosted" />}
+                  {badge(s) && <Badge k={badge(s)!} title={badge(s)!} />}
                 </div>
                 <div className="text-xs text-white/50">{fmt.format(count(s))} members</div>
               </div>
