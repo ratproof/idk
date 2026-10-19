@@ -5,6 +5,7 @@ export const CONTACT_EMAIL = "contact@stains.rocks";
 export const DEFAULT_PREFIX = ",";
 export const API_URL = "/api/commands";
 export const STATUS_URL = "/api/status";
+export const SERVERS_URL = "/api/servers";
 export const HIDDEN_GROUPS = ["CDN", "Help"];
 export const STATS: { servers: number; users: number } | null = null;
 export const SHOWCASE_SERVERS: { name: string; iconUrl: string; members: number; badge?: string }[] = [];
