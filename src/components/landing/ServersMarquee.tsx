@@ -4,14 +4,20 @@ type Server = {
   id: string;
   name: string;
   icon?: string | null;
+  icon_url?: string | null;
+  iconUrl?: string | null;
   members?: number;
   memberCount?: number;
   member_count?: number;
 };
 
 const count = (s: Server) => s.members ?? s.memberCount ?? s.member_count ?? 0;
-const icon = (s: Server) =>
-  !s.icon ? null : s.icon.startsWith("http") ? s.icon : `https://cdn.discordapp.com/icons/${s.id}/${s.icon}.png?size=128`;
+const icon = (s: Server) => {
+  const i = s.icon_url ?? s.iconUrl ?? s.icon;
+  if (!i) return null;
+  if (i.startsWith("http")) return i.replace(/\?size=\d+/, "") + (i.includes("?") ? "" : "?size=128");
+  return `https://cdn.discordapp.com/icons/${s.id}/${i}.${i.startsWith("a_") ? "gif" : "png"}?size=128`;
+};
 const fmt = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 
 // duration should match the socials marquee so both scroll at the same pace
