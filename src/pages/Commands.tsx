@@ -24,6 +24,9 @@ export default function Commands() {
   const drag = useRef({ down: false, moved: false, x: 0, left: 0 });
   const dq = useDebounced(q).toLowerCase().trim();
 
+  // biggest groups first, smallest last (ties keep the api order)
+  const groups = useMemo(() => (data ? [...data].sort((a, b) => b.count - a.count) : undefined), [data]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "/" && document.activeElement?.tagName !== "INPUT") { e.preventDefault(); input.current?.focus(); }
@@ -54,13 +57,13 @@ export default function Commands() {
   useEffect(() => { document.getElementById(`tab-${active}`)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, [active]);
 
   const cards = useMemo(() => {
-    if (!data) return [];
-    const src = dq || active === "all" ? data : data.filter((g) => g.slug === active);
+    if (!groups) return [];
+    const src = dq || active === "all" ? groups : groups.filter((g) => g.slug === active);
     const list = flatten(src.flatMap((g) => g.commands));
     return dq ? list.filter((c) => [c.name, c.usage, ...c.aliases].some((s) => s.toLowerCase().includes(dq))) : list;
-  }, [data, active, dq]);
+  }, [groups, active, dq]);
 
-  const tabList = data ? [{ slug: "all", name: "All", count: totalCount(data) }, ...data] : [];
+  const tabList = groups ? [{ slug: "all", name: "All", count: totalCount(groups) }, ...groups] : [];
   const pick = (slug: string) => { setActive(slug); history.replaceState(null, "", slug === "all" ? "#" : `#${slug}`); };
   const nudge = (dir: 1 | -1) => tabs.current?.scrollBy({ left: dir * tabs.current.clientWidth * 0.6, behavior: "smooth" });
 
