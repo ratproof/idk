@@ -3,6 +3,7 @@ import Hero from "@/components/landing/Hero";
 import { moderation, voicemaster, giveaways } from "@/components/landing/bentoConfig";
 
 const SocialProof = lazy(() => import("@/components/landing/SocialProof"));
+const Servers = lazy(() => import("@/components/landing/ServersMarquee"));
 const Bento = lazy(() => import("@/components/landing/BentoSection").then((m) => ({ default: m.BentoSection })));
 const Integrations = lazy(() => import("@/components/landing/IntegrationsMarquee"));
 const MoreFeatures = lazy(() => import("@/components/landing/MoreFeatures"));
@@ -28,6 +29,7 @@ export default function Home() {
       <Hero />
       <Suspense fallback={<div className="min-h-screen" />}>
         <SocialProof />
+        <Servers />
         <Bento {...moderation} />
         <Bento {...voicemaster} />
         <Bento {...giveaways} />
