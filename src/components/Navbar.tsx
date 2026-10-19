@@ -18,6 +18,7 @@ export default function Navbar() {
   const hidden = scrolled && !open;
 
   const l = "font-medium text-fg transition-colors hover:text-accent-soft";
+
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-transform duration-300 ${
@@ -28,11 +29,14 @@ export default function Navbar() {
         <Link to="/" aria-label={`${BOT_NAME} home`} className="justify-self-start">
           <img src="/favicon.png" alt={BOT_NAME} width={40} height={40} className="h-10 w-10 rounded-full" />
         </Link>
+
         <nav aria-label="Main" className="hidden items-center gap-10 rounded-[22px] border border-white/[0.07] bg-[#121413]/80 px-9 py-3.5 backdrop-blur-xl md:flex">
           <Link to="/commands" className={l}>Commands</Link>
+          <Link to="/embed" className={l}>Embeds</Link>
           <Link to="/status" className={l}>Status</Link>
           <a href={SUPPORT_URL} className={l}>Support</a>
         </nav>
+
         <div className="col-start-3 flex items-center justify-self-end">
           <a href={INVITE_URL} className="btn btn-accent hidden !py-2 md:inline-flex">Invite</a>
           <button className="md:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -40,9 +44,11 @@ export default function Navbar() {
           </button>
         </div>
       </div>
+
       {open && (
         <nav aria-label="Mobile" className="mx-4 flex flex-col gap-4 rounded-[22px] border border-white/[0.07] bg-[#121413]/95 p-6 backdrop-blur-xl md:hidden">
           <Link to="/commands" onClick={() => setOpen(false)} className={l}>Commands</Link>
+          <Link to="/embeds" onClick={() => setOpen(false)} className={l}>Embeds</Link>
           <Link to="/status" onClick={() => setOpen(false)} className={l}>Status</Link>
           <a href={SUPPORT_URL} className={l}>Support</a>
           <a href={INVITE_URL} className="btn btn-accent justify-center">Invite</a>
