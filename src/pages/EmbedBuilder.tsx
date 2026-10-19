@@ -50,7 +50,7 @@ const EMPTY_EMBED: EmbedState = {
   title: "",
   titleUrl: "",
   description: "",
-  color: "#4f8cff",
+  color: "#0B1933",
   thumbnail: "",
   image: "",
   footerText: "",
@@ -66,10 +66,6 @@ const EXAMPLE_EMBED: EmbedState = {
   footerText: BOT_NAME,
   timestamp: true,
 };
-
-/* ------------------------------------------------------------------ */
-/* tiny discord-flavoured markdown renderer                            */
-/* ------------------------------------------------------------------ */
 
 const INLINE_RE =
   /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|__[^_]+__|\*[^*\n]+\*|_[^_\n]+_|~~[^~]+~~|`[^`\n]+`|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
