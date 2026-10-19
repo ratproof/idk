@@ -1,10 +1,174 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import { useCommands } from "@/hooks/useCommands";
 import { slugify, totalCount, type Command } from "@/lib/api";
 import { CommandCard } from "@/components/commands/CommandCard";
-import { GroupIcon } from "@/components/commands/GroupIcons";
 
+// ---------- tab icons ----------
+// Soft tint on closed shapes so icons read as "duotone" without needing a second colour.
+const T = { fill: "currentColor", fillOpacity: 0.14 } as const;
+const DOT = { fill: "currentColor", stroke: "none" } as const;
+
+const ICONS: Record<string, ReactNode> = {
+  // 2x2 grid
+  all: (
+    <>
+      <rect x="3" y="3" width="7.5" height="7.5" rx="2.2" {...T} />
+      <rect x="13.5" y="3" width="7.5" height="7.5" rx="2.2" {...T} />
+      <rect x="3" y="13.5" width="7.5" height="7.5" rx="2.2" {...T} />
+      <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2.2" {...T} />
+    </>
+  ),
+
+  // coin with a dollar sign
+  economy: (
+    <>
+      <circle cx="12" cy="12" r="9" {...T} />
+      <path d="M14.7 9.3c-.4-.9-1.4-1.4-2.7-1.4-1.5 0-2.6.8-2.6 1.9 0 2.7 5.2 1.5 5.2 4.2 0 1.2-1.2 2-2.6 2-1.3 0-2.3-.5-2.8-1.5" />
+      <path d="M12 6.2v1.7M12 16.1v1.7" />
+    </>
+  ),
+
+  // shield with a check
+  moderation: (
+    <>
+      <path d="M12 3l7.5 3v5.6c0 4.4-3.1 7.9-7.5 9.4-4.4-1.5-7.5-5-7.5-9.4V6L12 3z" {...T} />
+      <path d="M8.8 12.1l2.2 2.2 4.2-4.5" />
+    </>
+  ),
+
+  // sliders
+  configuration: (
+    <>
+      <path d="M4 7h8.5M17.5 7H20M4 12h2.5M11.5 12H20M4 17h8.5M17.5 17H20" />
+      <circle cx="15" cy="7" r="2.5" {...T} />
+      <circle cx="9" cy="12" r="2.5" {...T} />
+      <circle cx="15" cy="17" r="2.5" {...T} />
+    </>
+  ),
+
+  // wrench
+  utility: (
+    <path
+      d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+      {...T}
+    />
+  ),
+
+  // smiley
+  fun: (
+    <>
+      <circle cx="12" cy="12" r="9" {...T} />
+      <circle cx="9" cy="10" r=".9" {...DOT} />
+      <circle cx="15" cy="10" r=".9" {...DOT} />
+      <path d="M8 14.2c1 1.5 2.3 2.3 4 2.3s3-.8 4-2.3" />
+    </>
+  ),
+
+  // Last.fm logo (filled brand glyph, so it opts out of the stroke styling)
+  lastfm: (
+    <path
+      d="M10.584 17.21l-.88-2.392s-1.43 1.595-3.573 1.595c-1.897 0-3.244-1.649-3.244-4.287 0-3.381 1.704-4.591 3.381-4.591 2.42 0 3.189 1.567 3.849 3.574l.88 2.75c.88 2.668 2.528 4.81 7.284 4.81 3.409 0 5.719-1.044 5.719-3.793 0-2.227-1.265-3.381-3.629-3.931l-1.756-.385c-1.21-.275-1.567-.77-1.567-1.595 0-.935.742-1.485 1.952-1.485 1.32 0 2.034.495 2.144 1.678l2.75-.33c-.22-2.474-1.924-3.491-4.729-3.491-2.474 0-4.893.935-4.893 3.931 0 1.87.907 3.052 3.189 3.602l1.87.44c1.402.33 1.87.907 1.87 1.705 0 1.017-.989 1.43-2.857 1.43-2.777 0-3.932-1.457-4.591-3.464l-.907-2.75c-1.155-3.573-2.997-4.894-6.653-4.894C2.144 5.333 0 7.89 0 12.233c0 4.18 2.144 6.434 5.993 6.434 3.107 0 4.591-1.457 4.591-1.457z"
+      {...DOT}
+    />
+  ),
+
+  // gem
+  premium: (
+    <>
+      <path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6z" {...T} />
+      <path d="M2 9h20M10 3L8 9l4 12 4-12-2-6" />
+    </>
+  ),
+
+  // four-point sparkles
+  misc: (
+    <>
+      <path d="M11 3.5c.6 4.3 2.2 5.9 6.5 6.5-4.3.6-5.9 2.2-6.5 6.5-.6-4.3-2.2-5.9-6.5-6.5C8.8 9.4 10.4 7.8 11 3.5z" {...T} />
+      <path d="M19 15.5v5M16.5 18h5" />
+    </>
+  ),
+
+  // question mark in a circle
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" {...T} />
+      <path d="M9.4 9.4a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.2-2.6 3.8" />
+      <circle cx="12" cy="17.2" r=".9" {...DOT} />
+    </>
+  ),
+
+  // gift box
+  giveaways: (
+    <>
+      <rect x="3" y="8" width="18" height="4" rx="1.2" {...T} />
+      <path d="M5 12v7.2A1.8 1.8 0 0 0 6.8 21h10.4a1.8 1.8 0 0 0 1.8-1.8V12" {...T} />
+      <path d="M12 8v13" />
+      <path d="M12 8C10.4 4.4 7 4.4 7 6.4S9.6 8 12 8z" />
+      <path d="M12 8c1.6-3.6 5-3.6 5-1.6S14.4 8 12 8z" />
+    </>
+  ),
+
+  // ticket with perforation
+  tickets: (
+    <>
+      <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5V10a2 2 0 0 0 0 4v1.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 15.5V14a2 2 0 0 0 0-4V8.5z" {...T} />
+      <path d="M14.5 6.5v2M14.5 11v2M14.5 15.5v2" />
+    </>
+  ),
+
+  // cloud with upload arrow
+  cdn: (
+    <>
+      <path d="M7 18.5a4 4 0 0 1-.5-7.97 5.5 5.5 0 0 1 10.6-.9A4.5 4.5 0 0 1 17.5 18.5H7z" {...T} />
+      <path d="M12 16v-5M9.8 12.9L12 10.7l2.2 2.2" />
+    </>
+  ),
+
+  // code brackets
+  jishaku: <path d="M8 7.5L3.5 12 8 16.5M16 7.5l4.5 4.5-4.5 4.5M13.5 5l-3 14" />,
+};
+
+// extra slugs that should reuse an icon
+const ALIAS: Record<string, string> = {
+  config: "configuration",
+  settings: "configuration",
+  mod: "moderation",
+  eco: "economy",
+  music: "lastfm",
+  "last-fm": "lastfm",
+  giveaway: "giveaways",
+  ticket: "tickets",
+  info: "utility",
+  tools: "utility",
+  games: "fun",
+  owner: "jishaku",
+  dev: "jishaku",
+};
+
+// fallback: hash sign
+const FALLBACK = <path d="M5 9h14M5 15h14M10.5 4L8.5 20M15.5 4l-2 16" />;
+
+function GroupIcon({ slug, className }: { slug: string; className?: string }) {
+  const key = slug.toLowerCase();
+  const icon = ICONS[key] ?? ICONS[ALIAS[key]] ?? FALLBACK;
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {icon}
+    </svg>
+  );
+}
+
+// ---------- page ----------
 function useDebounced<T>(v: T, ms = 200) {
   const [d, setD] = useState(v);
   useEffect(() => { const t = setTimeout(() => setD(v), ms); return () => clearTimeout(t); }, [v, ms]);
