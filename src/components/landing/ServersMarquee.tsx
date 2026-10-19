@@ -9,6 +9,9 @@ type Server = {
   members?: number;
   memberCount?: number;
   member_count?: number;
+  community?: boolean;
+  discoverable?: boolean;
+  boosted?: boolean;
 };
 
 const count = (s: Server) => s.members ?? s.memberCount ?? s.member_count ?? 0;
@@ -19,6 +22,11 @@ const icon = (s: Server) => {
   return `https://cdn.discordapp.com/icons/${s.id}/${i}.${i.startsWith("a_") ? "gif" : "png"}?size=128`;
 };
 const fmt = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+
+// put the official icons in public/badges/ as community.svg, discoverable.svg, boosted.svg
+const Badge = ({ k, title }: { k: "community" | "discoverable" | "boosted"; title: string }) => (
+  <img src={`/badges/${k}.svg`} alt={title} title={title} className="h-4 w-4" />
+);
 
 // duration should match the socials marquee so both scroll at the same pace
 export default function ServersMarquee({ duration = 40 }: { duration?: number }) {
@@ -66,7 +74,12 @@ export default function ServersMarquee({ duration = 40 }: { duration?: number })
                 </div>
               )}
               <div className="leading-tight">
-                <div className="whitespace-nowrap text-sm font-medium">{s.name}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="whitespace-nowrap text-sm font-medium">{s.name}</span>
+                  {s.community && <Badge k="community" title="Community" />}
+                  {s.discoverable && <Badge k="discoverable" title="Discoverable" />}
+                  {s.boosted && <Badge k="boosted" title="Boosted" />}
+                </div>
                 <div className="text-xs text-white/50">{fmt.format(count(s))} members</div>
               </div>
             </div>
