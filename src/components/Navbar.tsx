@@ -32,7 +32,7 @@ export default function Navbar() {
 
         <nav aria-label="Main" className="hidden items-center gap-10 rounded-[22px] border border-white/[0.07] bg-[#121413]/80 px-9 py-3.5 backdrop-blur-xl md:flex">
           <Link to="/commands" className={l}>Commands</Link>
-          <Link to="/embed" className={l}>Embeds</Link>
+          <Link to="/embeds" className={l}>Embeds</Link>
           <Link to="/status" className={l}>Status</Link>
           <a href={SUPPORT_URL} className={l}>Support</a>
         </nav>
