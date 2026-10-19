@@ -22,10 +22,11 @@ export default function ServersMarquee({ duration = 40 }: { duration?: number })
     fetch("/api/servers")
       .then((r) => r.json())
       .then((d) => {
+        console.log("servers:", d);
         const list: Server[] = Array.isArray(d) ? d : d.servers ?? [];
         setServers([...list].sort((a, b) => count(b) - count(a)).slice(0, 10));
       })
-      .catch(() => {});
+      .catch((e) => console.error("servers failed:", e));
   }, []);
 
   if (!servers.length) return null;
