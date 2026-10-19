@@ -10,6 +10,7 @@ const TITLES: Record<string, string> = {
   "/terms": "Terms",
   "/privacy": "Privacy",
   "/status": "Status",
+  "/embeds": "Embeds",
 };
 
 export default function Layout() {
