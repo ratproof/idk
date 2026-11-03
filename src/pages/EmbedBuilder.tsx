@@ -1,8 +1,23 @@
 import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
-import { Check, Copy, ExternalLink, Plus, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Columns2,
+  Copy,
+  ExternalLink,
+  Images,
+  Minus,
+  MousePointerClick,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Type,
+} from "lucide-react";
 import { BOT_NAME } from "@/config";
 
 type BtnStyle = "primary" | "secondary" | "success" | "danger" | "link";
+type Mode = "embed" | "container";
 
 interface Field {
   id: number;
@@ -34,7 +49,22 @@ interface EmbedState {
   timestamp: boolean;
 }
 
+type Comp =
+  | { id: number; type: "text"; content: string }
+  | { id: number; type: "section"; content: string; accessory: "thumbnail" | "button"; thumb: string; btn: Btn }
+  | { id: number; type: "separator"; divider: boolean; large: boolean }
+  | { id: number; type: "gallery"; urls: string[] }
+  | { id: number; type: "buttons"; btns: Btn[] };
+
+interface ContainerState {
+  accent: boolean;
+  color: string;
+  spoiler: boolean;
+}
+
 const LIMITS = { fields: 25, buttons: 5 };
+const CT_LIMITS = { components: 40, gallery: 10, text: 4000, buttons: 5 };
+const V2_FLAG = 1 << 15;
 
 const BTN_STYLES: { id: BtnStyle; label: string; bg: string; api: number }[] = [
   { id: "primary", label: "Primary", bg: "#5865f2", api: 1 },
@@ -66,6 +96,36 @@ const EXAMPLE_EMBED: EmbedState = {
   footerText: BOT_NAME,
   timestamp: true,
 };
+
+const newBtn = (id: number, over: Partial<Btn> = {}): Btn => ({
+  id,
+  label: "Button",
+  style: "primary",
+  url: "",
+  emoji: "",
+  disabled: false,
+  ...over,
+});
+
+const EMPTY_CT: ContainerState = { accent: true, color: "#0B1933", spoiler: false };
+
+const exampleComps = (): Comp[] => [
+  {
+    id: 1,
+    type: "text",
+    content: "## Welcome to the server\nGlad you're here! Read the **rules** first, then grab your roles below.",
+  },
+  { id: 2, type: "separator", divider: true, large: false },
+  {
+    id: 3,
+    type: "section",
+    content: "**Rules**\nBe kind. No spam.",
+    accessory: "button",
+    thumb: "",
+    btn: newBtn(0, { label: "Read", style: "link", url: "https://example.com/rules" }),
+  },
+  { id: 4, type: "buttons", btns: [newBtn(5, { label: "Verify", style: "success" })] },
+];
 
 const INLINE_RE =
   /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|__[^_]+__|\*[^*\n]+\*|_[^_\n]+_|~~[^~]+~~|`[^`\n]+`|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
@@ -149,6 +209,7 @@ type Tab = "script" | "json" | "python";
 const q = (s: string) => JSON.stringify(s);
 const colorInt = (hex: string) => parseInt(hex.replace("#", "") || "0", 16) || 0;
 const hasUrl = (s: string) => /^https?:\/\//i.test(s.trim());
+const btnReady = (b: Btn) => !!(b.label || b.emoji);
 
 /**
  * Bleed/Greed-style "script" syntax:  {embed}$v{title: ...}$v{field: name && value && inline}
@@ -265,6 +326,167 @@ function toPython(content: string, e: EmbedState, fields: Field[], btns: Btn[]):
 }
 
 /* ------------------------------------------------------------------ */
+/* components v2 container generators                                  */
+/* ------------------------------------------------------------------ */
+
+function btnJson(b: Btn, cid: string) {
+  const style = BTN_STYLES.find((s) => s.id === b.style)!.api;
+  return {
+    type: 2,
+    style,
+    ...(b.label && { label: b.label }),
+    ...(b.emoji && { emoji: { name: b.emoji } }),
+    ...(b.style === "link" ? { url: b.url } : { custom_id: cid }),
+    ...(b.disabled && { disabled: true }),
+  };
+}
+
+function compJson(c: Comp): Record<string, unknown> | null {
+  switch (c.type) {
+    case "text":
+      return c.content.trim() ? { type: 10, content: c.content } : null;
+    case "section": {
+      if (!c.content.trim()) return null;
+      const text = { type: 10, content: c.content };
+      // sections need an accessory, fall back to plain text if it's empty
+      if (c.accessory === "thumbnail") {
+        if (!c.thumb.trim()) return text;
+        return { type: 9, components: [text], accessory: { type: 11, media: { url: c.thumb } } };
+      }
+      if (!btnReady(c.btn)) return text;
+      return { type: 9, components: [text], accessory: btnJson(c.btn, `sec_${c.id}`) };
+    }
+    case "separator":
+      return { type: 14, divider: c.divider, spacing: c.large ? 2 : 1 };
+    case "gallery": {
+      const urls = c.urls.filter((u) => u.trim());
+      return urls.length ? { type: 12, items: urls.map((u) => ({ media: { url: u } })) } : null;
+    }
+    case "buttons": {
+      const bs = c.btns.filter(btnReady);
+      return bs.length ? { type: 1, components: bs.map((b, i) => btnJson(b, `btn_${c.id}_${i}`)) } : null;
+    }
+  }
+}
+
+function toContainerJson(ct: ContainerState, comps: Comp[]): string {
+  const container = {
+    type: 17,
+    ...(ct.accent && { accent_color: colorInt(ct.color) }),
+    ...(ct.spoiler && { spoiler: true }),
+    components: comps.map(compJson).filter(Boolean),
+  };
+  return JSON.stringify({ flags: V2_FLAG, components: [container] }, null, 2);
+}
+
+function btnPy(b: Btn, cid: string) {
+  const a = [
+    b.label && `label=${q(b.label)}`,
+    b.emoji && `emoji=${q(b.emoji)}`,
+    `style=discord.ButtonStyle.${b.style}`,
+    b.style === "link" ? `url=${q(b.url)}` : `custom_id=${q(cid)}`,
+    b.disabled && "disabled=True",
+  ].filter(Boolean);
+  return `discord.ui.Button(${a.join(", ")})`;
+}
+
+/** needs discord.py 2.6+ for LayoutView and friends */
+function toContainerPython(ct: ContainerState, comps: Comp[]): string {
+  const args = [
+    ct.accent && `accent_colour=discord.Colour(0x${(ct.color.replace("#", "") || "000000").toUpperCase()})`,
+    ct.spoiler && "spoiler=True",
+  ].filter(Boolean);
+  const L: string[] = ["view = discord.ui.LayoutView()", `container = discord.ui.Container(${args.join(", ")})`, ""];
+
+  comps.forEach((c) => {
+    switch (c.type) {
+      case "text":
+        if (c.content.trim()) L.push(`container.add_item(discord.ui.TextDisplay(${q(c.content)}))`);
+        break;
+      case "section": {
+        if (!c.content.trim()) break;
+        if (c.accessory === "thumbnail" && c.thumb.trim())
+          L.push(`container.add_item(discord.ui.Section(${q(c.content)}, accessory=discord.ui.Thumbnail(${q(c.thumb)})))`);
+        else if (c.accessory === "button" && btnReady(c.btn))
+          L.push(`container.add_item(discord.ui.Section(${q(c.content)}, accessory=${btnPy(c.btn, `sec_${c.id}`)}))`);
+        else L.push(`container.add_item(discord.ui.TextDisplay(${q(c.content)}))`);
+        break;
+      }
+      case "separator":
+        L.push(
+          `container.add_item(discord.ui.Separator(visible=${c.divider ? "True" : "False"}, spacing=discord.SeparatorSpacing.${c.large ? "large" : "small"}))`
+        );
+        break;
+      case "gallery": {
+        const urls = c.urls.filter((u) => u.trim());
+        if (urls.length)
+          L.push(
+            `container.add_item(discord.ui.MediaGallery(${urls.map((u) => `discord.MediaGalleryItem(${q(u)})`).join(", ")}))`
+          );
+        break;
+      }
+      case "buttons": {
+        const bs = c.btns.filter(btnReady);
+        if (!bs.length) break;
+        L.push(`row_${c.id} = discord.ui.ActionRow()`);
+        bs.forEach((b, i) => L.push(`row_${c.id}.add_item(${btnPy(b, `btn_${c.id}_${i}`)})`));
+        L.push(`container.add_item(row_${c.id})`);
+        break;
+      }
+    }
+  });
+
+  L.push("", "view.add_item(container)", "", "await ctx.send(view=view)");
+  return L.join("\n");
+}
+
+/**
+ * Script syntax for containers. This is a guess in the same style as toScript,
+ * edit this one function if your bot parses something different.
+ */
+function toContainerScript(ct: ContainerState, comps: Comp[]): string {
+  const p: string[] = ["{container}"];
+  if (ct.accent) p.push(`{color: ${ct.color}}`);
+  if (ct.spoiler) p.push("{spoiler: true}");
+  comps.forEach((c) => {
+    switch (c.type) {
+      case "text":
+        if (c.content.trim()) p.push(`{text: ${c.content}}`);
+        break;
+      case "section":
+        if (!c.content.trim()) break;
+        if (c.accessory === "thumbnail" && c.thumb.trim()) p.push(`{section: ${c.content} && thumbnail && ${c.thumb}}`);
+        else if (c.accessory === "button" && btnReady(c.btn))
+          p.push(
+            `{section: ${[c.content, "button", c.btn.label, c.btn.style, c.btn.style === "link" ? c.btn.url : "", c.btn.emoji]
+              .filter((x, i) => x || i < 4)
+              .join(" && ")}}`
+          );
+        else p.push(`{text: ${c.content}}`);
+        break;
+      case "separator":
+        p.push(`{separator: ${c.divider ? "true" : "false"} && ${c.large ? "large" : "small"}}`);
+        break;
+      case "gallery": {
+        const urls = c.urls.filter((u) => u.trim());
+        if (urls.length) p.push(`{gallery: ${urls.join(" && ")}}`);
+        break;
+      }
+      case "buttons":
+        c.btns.filter(btnReady).forEach((b) =>
+          p.push(
+            `{button: ${[b.label, b.style, b.style === "link" ? b.url : "", b.emoji]
+              .filter((x, i) => x || i < 2)
+              .join(" && ")}}`
+          )
+        );
+        break;
+    }
+  });
+  return p.join("$v");
+}
+
+/* ------------------------------------------------------------------ */
 /* small ui bits                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -293,6 +515,401 @@ function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (
   );
 }
 
+function PreviewBtn({ b }: { b: Btn }) {
+  const st = BTN_STYLES.find((s) => s.id === b.style)!;
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      style={{ backgroundColor: st.bg }}
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded px-4 text-sm font-medium text-white transition-[filter] ${
+        b.disabled ? "cursor-not-allowed opacity-50" : "hover:brightness-90"
+      }`}
+    >
+      {b.emoji && <span>{b.emoji}</span>}
+      {b.label}
+      {b.style === "link" && <ExternalLink size={14} />}
+    </button>
+  );
+}
+
+function BtnRow({ b, onChange, onRemove }: { b: Btn; onChange: (p: Partial<Btn>) => void; onRemove?: () => void }) {
+  return (
+    <div className="space-y-2">
+      <div className={`grid gap-2 ${onRemove ? "sm:grid-cols-[1fr_1fr_5rem_auto]" : "sm:grid-cols-[1fr_1fr_5rem]"}`}>
+        <input className={inputCls} maxLength={80} value={b.label} onChange={(ev) => onChange({ label: ev.target.value })} placeholder="Label" />
+        <select className={inputCls} value={b.style} onChange={(ev) => onChange({ style: ev.target.value as BtnStyle })} aria-label="Button style">
+          {BTN_STYLES.map((s) => (
+            <option key={s.id} value={s.id} className="bg-[#121413]">
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <input className={inputCls} value={b.emoji} onChange={(ev) => onChange({ emoji: ev.target.value })} placeholder="Emoji" aria-label="Emoji" />
+        {onRemove && (
+          <button onClick={onRemove} aria-label="Remove button" className="rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400">
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+      {b.style === "link" && (
+        <input className={inputCls} value={b.url} onChange={(ev) => onChange({ url: ev.target.value })} placeholder="https://..." />
+      )}
+      <Toggle checked={b.disabled} onChange={(v) => onChange({ disabled: v })}>
+        Disabled
+      </Toggle>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* container editor + preview                                          */
+/* ------------------------------------------------------------------ */
+
+const COMP_META: Record<Comp["type"], { label: string; icon: ReactNode }> = {
+  text: { label: "Text", icon: <Type size={15} /> },
+  section: { label: "Section", icon: <Columns2 size={15} /> },
+  separator: { label: "Separator", icon: <Minus size={15} /> },
+  gallery: { label: "Gallery", icon: <Images size={15} /> },
+  buttons: { label: "Buttons", icon: <MousePointerClick size={15} /> },
+};
+
+function ContainerEditor({
+  ct,
+  setCt,
+  comps,
+  setComps,
+  newId,
+}: {
+  ct: ContainerState;
+  setCt: (fn: (p: ContainerState) => ContainerState) => void;
+  comps: Comp[];
+  setComps: (fn: (p: Comp[]) => Comp[]) => void;
+  newId: () => number;
+}) {
+  const upd = (cid: number, patch: Partial<Comp>) =>
+    setComps((cs) => cs.map((c) => (c.id === cid ? ({ ...c, ...patch } as Comp) : c)));
+  const del = (cid: number) => setComps((cs) => cs.filter((c) => c.id !== cid));
+  const move = (i: number, d: -1 | 1) =>
+    setComps((cs) => {
+      const j = i + d;
+      if (j < 0 || j >= cs.length) return cs;
+      const n = [...cs];
+      [n[i], n[j]] = [n[j], n[i]];
+      return n;
+    });
+
+  const make = (type: Comp["type"]): Comp => {
+    const id = newId();
+    switch (type) {
+      case "text":
+        return { id, type: "text", content: "" };
+      case "section":
+        return { id, type: "section", content: "", accessory: "thumbnail", thumb: "", btn: newBtn(newId()) };
+      case "separator":
+        return { id, type: "separator", divider: true, large: false };
+      case "gallery":
+        return { id, type: "gallery", urls: [""] };
+      case "buttons":
+        return { id, type: "buttons", btns: [newBtn(newId())] };
+    }
+  };
+
+  const textLen = comps.reduce(
+    (n, c) => n + (c.type === "text" || c.type === "section" ? c.content.length : 0),
+    0
+  );
+
+  return (
+    <div className="space-y-6">
+      <section className={`${card} space-y-4`}>
+        <h2 className="font-semibold text-fg">Container</h2>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <Toggle checked={ct.accent} onChange={(v) => setCt((p) => ({ ...p, accent: v }))}>
+            Accent color
+          </Toggle>
+          <Toggle checked={ct.spoiler} onChange={(v) => setCt((p) => ({ ...p, spoiler: v }))}>
+            Spoiler
+          </Toggle>
+        </div>
+        {ct.accent && (
+          <div>
+            <Label>Color</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={ct.color}
+                onChange={(ev) => setCt((p) => ({ ...p, color: ev.target.value }))}
+                aria-label="Accent color"
+                className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.07] bg-black/30 p-1"
+              />
+              <input
+                className={`${inputCls} w-28 font-mono`}
+                value={ct.color}
+                maxLength={7}
+                onChange={(ev) => setCt((p) => ({ ...p, color: ev.target.value }))}
+              />
+            </div>
+          </div>
+        )}
+        <p className="text-xs text-white/40">
+          Container messages can't have message content or embeds. Text across all components: {textLen}/{CT_LIMITS.text}
+        </p>
+      </section>
+
+      <section className={`${card} space-y-3`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold text-fg">
+            Components{" "}
+            <span className="text-sm font-normal text-white/40">
+              {comps.length}/{CT_LIMITS.components}
+            </span>
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {(Object.keys(COMP_META) as Comp["type"][]).map((t) => (
+              <button
+                key={t}
+                disabled={comps.length >= CT_LIMITS.components}
+                onClick={() => setComps((cs) => [...cs, make(t)])}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] px-2.5 py-1.5 text-xs font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
+              >
+                <Plus size={14} /> {COMP_META[t].label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {comps.length === 0 && <p className="text-sm text-white/40">Nothing in the container yet.</p>}
+
+        {comps.map((c, i) => (
+          <div key={c.id} className="space-y-3 rounded-xl border border-white/[0.07] bg-black/20 p-3">
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-white/70">
+                {COMP_META[c.type].icon} {COMP_META[c.type].label}
+              </span>
+              <div className="flex items-center">
+                <button
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  aria-label="Move up"
+                  className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/5 hover:text-fg disabled:opacity-30"
+                >
+                  <ChevronUp size={16} />
+                </button>
+                <button
+                  onClick={() => move(i, 1)}
+                  disabled={i === comps.length - 1}
+                  aria-label="Move down"
+                  className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/5 hover:text-fg disabled:opacity-30"
+                >
+                  <ChevronDown size={16} />
+                </button>
+                <button
+                  onClick={() => del(c.id)}
+                  aria-label="Remove component"
+                  className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+
+            {c.type === "text" && (
+              <textarea
+                className={`${inputCls} resize-y`}
+                rows={4}
+                maxLength={CT_LIMITS.text}
+                value={c.content}
+                onChange={(ev) => upd(c.id, { content: ev.target.value })}
+                placeholder="Supports # headers, **bold**, *italic*, __underline__, ~~strike~~, `code` and [links](https://...)"
+              />
+            )}
+
+            {c.type === "section" && (
+              <>
+                <textarea
+                  className={`${inputCls} resize-y`}
+                  rows={3}
+                  maxLength={CT_LIMITS.text}
+                  value={c.content}
+                  onChange={(ev) => upd(c.id, { content: ev.target.value })}
+                  placeholder="Section text"
+                />
+                <div>
+                  <Label>Accessory</Label>
+                  <select
+                    className={inputCls}
+                    value={c.accessory}
+                    onChange={(ev) => upd(c.id, { accessory: ev.target.value as "thumbnail" | "button" })}
+                    aria-label="Accessory type"
+                  >
+                    <option value="thumbnail" className="bg-[#121413]">
+                      Thumbnail
+                    </option>
+                    <option value="button" className="bg-[#121413]">
+                      Button
+                    </option>
+                  </select>
+                </div>
+                {c.accessory === "thumbnail" ? (
+                  <input
+                    className={inputCls}
+                    value={c.thumb}
+                    onChange={(ev) => upd(c.id, { thumb: ev.target.value })}
+                    placeholder="Thumbnail URL https://..."
+                  />
+                ) : (
+                  <BtnRow b={c.btn} onChange={(p) => upd(c.id, { btn: { ...c.btn, ...p } })} />
+                )}
+              </>
+            )}
+
+            {c.type === "separator" && (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <Toggle checked={c.divider} onChange={(v) => upd(c.id, { divider: v })}>
+                  Show divider line
+                </Toggle>
+                <Toggle checked={c.large} onChange={(v) => upd(c.id, { large: v })}>
+                  Large spacing
+                </Toggle>
+              </div>
+            )}
+
+            {c.type === "gallery" && (
+              <div className="space-y-2">
+                {c.urls.map((u, ui) => (
+                  <div key={ui} className="flex items-center gap-2">
+                    <input
+                      className={inputCls}
+                      value={u}
+                      onChange={(ev) => upd(c.id, { urls: c.urls.map((x, xi) => (xi === ui ? ev.target.value : x)) })}
+                      placeholder="Image URL https://..."
+                    />
+                    <button
+                      onClick={() => upd(c.id, { urls: c.urls.filter((_, xi) => xi !== ui) })}
+                      aria-label={`Remove image ${ui + 1}`}
+                      className="shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  disabled={c.urls.length >= CT_LIMITS.gallery}
+                  onClick={() => upd(c.id, { urls: [...c.urls, ""] })}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
+                >
+                  <Plus size={16} /> Add image{" "}
+                  <span className="text-white/40">
+                    {c.urls.length}/{CT_LIMITS.gallery}
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {c.type === "buttons" && (
+              <div className="space-y-3">
+                {c.btns.map((b) => (
+                  <div key={b.id} className="rounded-xl border border-white/[0.07] bg-black/20 p-3">
+                    <BtnRow
+                      b={b}
+                      onChange={(p) => upd(c.id, { btns: c.btns.map((x) => (x.id === b.id ? { ...x, ...p } : x)) })}
+                      onRemove={() => upd(c.id, { btns: c.btns.filter((x) => x.id !== b.id) })}
+                    />
+                  </div>
+                ))}
+                <button
+                  disabled={c.btns.length >= CT_LIMITS.buttons}
+                  onClick={() => upd(c.id, { btns: [...c.btns, newBtn(newId())] })}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
+                >
+                  <Plus size={16} /> Add button{" "}
+                  <span className="text-white/40">
+                    {c.btns.length}/{CT_LIMITS.buttons}
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function ContainerPreview({ ct, comps }: { ct: ContainerState; comps: Comp[] }) {
+  const visible = comps.filter((c) => compJson(c) !== null || c.type === "separator");
+  if (visible.length === 0) return null;
+  return (
+    <div
+      className={`relative mt-1.5 max-w-[520px] space-y-2 overflow-hidden rounded-lg border border-[#1e1f22] bg-[#2b2d31] p-4 ${
+        ct.accent ? "border-l-4" : ""
+      }`}
+      style={ct.accent ? { borderLeftColor: ct.color } : undefined}
+    >
+      {ct.spoiler && (
+        <span className="absolute right-2 top-2 rounded bg-black/50 px-1.5 py-px text-[10px] font-semibold uppercase text-white/70">
+          Spoiler
+        </span>
+      )}
+      {visible.map((c) => {
+        switch (c.type) {
+          case "text":
+            return (
+              <div key={c.id} className="whitespace-pre-wrap break-words text-sm leading-[1.375]">
+                <Md text={c.content} />
+              </div>
+            );
+          case "section":
+            return (
+              <div key={c.id} className="flex items-center gap-4">
+                <div className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-[1.375]">
+                  <Md text={c.content} />
+                </div>
+                {c.accessory === "thumbnail" && hasUrl(c.thumb) && (
+                  <img src={c.thumb} alt="" className="h-20 w-20 shrink-0 rounded object-cover" />
+                )}
+                {c.accessory === "button" && btnReady(c.btn) && <PreviewBtn b={c.btn} />}
+              </div>
+            );
+          case "separator":
+            return (
+              <div key={c.id} className={c.large ? "py-2" : "py-0.5"}>
+                {c.divider && <div className="h-px bg-white/10" />}
+              </div>
+            );
+          case "gallery": {
+            const urls = c.urls.filter(hasUrl);
+            if (!urls.length) return null;
+            return (
+              <div
+                key={c.id}
+                className="grid gap-1 overflow-hidden rounded-lg"
+                style={{ gridTemplateColumns: `repeat(${urls.length === 1 ? 1 : 2}, minmax(0, 1fr))` }}
+              >
+                {urls.map((u, i) => (
+                  <img key={i} src={u} alt="" className={`w-full object-cover ${urls.length === 1 ? "max-h-[300px]" : "h-32"}`} />
+                ))}
+              </div>
+            );
+          }
+          case "buttons": {
+            const bs = c.btns.filter(btnReady);
+            if (!bs.length) return null;
+            return (
+              <div key={c.id} className="flex flex-wrap gap-2">
+                {bs.map((b) => (
+                  <PreviewBtn key={b.id} b={b} />
+                ))}
+              </div>
+            );
+          }
+        }
+      })}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* page                                                                */
 /* ------------------------------------------------------------------ */
@@ -301,6 +918,9 @@ export default function EmbedBuilder() {
   const nextId = useRef(10);
   const id = () => nextId.current++;
 
+  const [mode, setMode] = useState<Mode>("embed");
+
+  // embed mode
   const [content, setContent] = useState("");
   const [e, setE] = useState<EmbedState>(EXAMPLE_EMBED);
   const [fields, setFields] = useState<Field[]>([
@@ -312,6 +932,11 @@ export default function EmbedBuilder() {
     { id: 4, label: "Verify", style: "success", url: "", emoji: "", disabled: false },
     { id: 5, label: "Rules", style: "link", url: "https://example.com/rules", emoji: "", disabled: false },
   ]);
+
+  // container (components v2) mode
+  const [ct, setCt] = useState<ContainerState>(EMPTY_CT);
+  const [comps, setComps] = useState<Comp[]>(exampleComps);
+
   const [tab, setTab] = useState<Tab>("script");
   const [copied, setCopied] = useState(false);
 
@@ -322,6 +947,11 @@ export default function EmbedBuilder() {
     setBtns((bs) => bs.map((b) => (b.id === bid ? { ...b, ...patch } : b)));
 
   const reset = () => {
+    if (mode === "container") {
+      setCt(EMPTY_CT);
+      setComps([]);
+      return;
+    }
     setContent("");
     setE(EMPTY_EMBED);
     setFields([]);
@@ -329,10 +959,15 @@ export default function EmbedBuilder() {
   };
 
   const output = useMemo(() => {
+    if (mode === "container") {
+      if (tab === "json") return toContainerJson(ct, comps);
+      if (tab === "python") return toContainerPython(ct, comps);
+      return toContainerScript(ct, comps);
+    }
     if (tab === "json") return toJson(content, e, fields, btns);
     if (tab === "python") return toPython(content, e, fields, btns);
     return toScript(content, e, fields, btns);
-  }, [tab, content, e, fields, btns]);
+  }, [mode, ct, comps, tab, content, e, fields, btns]);
 
   const copy = async () => {
     try {
@@ -366,229 +1001,210 @@ export default function EmbedBuilder() {
         <div>
           <h1 className="text-3xl font-bold text-fg md:text-4xl">Embed builder</h1>
           <p className="mt-2 max-w-xl text-white/60">
-            Design an embed with fields and buttons, see it exactly how Discord shows it, then copy the script.
+            {mode === "embed"
+              ? "Design an embed with fields and buttons, see it exactly how Discord shows it, then copy the script."
+              : "Build a components v2 container with text, sections, galleries and buttons, then copy the script."}
           </p>
         </div>
-        <button onClick={reset} className="inline-flex items-center gap-2 rounded-xl border border-white/[0.07] bg-[#121413]/80 px-4 py-2 text-sm font-medium text-fg transition-colors hover:text-accent-soft">
-          <RotateCcw size={15} /> Clear all
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div role="tablist" aria-label="Message type" className="flex gap-1 rounded-xl bg-black/30 p-1">
+            {(["embed", "container"] as Mode[]).map((m) => (
+              <button
+                key={m}
+                role="tab"
+                aria-selected={mode === m}
+                onClick={() => setMode(m)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  mode === m ? "bg-white/10 text-fg" : "text-white/50 hover:text-fg"
+                }`}
+              >
+                {m === "embed" ? "Embed" : "Container (v2)"}
+              </button>
+            ))}
+          </div>
+          <button onClick={reset} className="inline-flex items-center gap-2 rounded-xl border border-white/[0.07] bg-[#121413]/80 px-4 py-2 text-sm font-medium text-fg transition-colors hover:text-accent-soft">
+            <RotateCcw size={15} /> Clear all
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* ----------------------------- editor ----------------------------- */}
-        <div className="space-y-6">
-          <section className={card}>
-            <Label hint={`${content.length}/2000`}>Message content</Label>
-            <textarea
-              value={content}
-              onChange={(ev) => setContent(ev.target.value)}
-              maxLength={2000}
-              rows={2}
-              placeholder="Text above the embed (optional)"
-              className={`${inputCls} resize-y`}
-            />
-          </section>
-
-          <section className={`${card} space-y-4`}>
-            <h2 className="font-semibold text-fg">Embed</h2>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label>Author name</Label>
-                <input className={inputCls} maxLength={256} value={e.authorName} onChange={(ev) => upd("authorName", ev.target.value)} placeholder="Author" />
-              </div>
-              <div>
-                <Label>Author icon URL</Label>
-                <input className={inputCls} value={e.authorIcon} onChange={(ev) => upd("authorIcon", ev.target.value)} placeholder="https://..." />
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label hint={`${e.title.length}/256`}>Title</Label>
-                <input className={inputCls} maxLength={256} value={e.title} onChange={(ev) => upd("title", ev.target.value)} placeholder="Title" />
-              </div>
-              <div>
-                <Label>Title URL</Label>
-                <input className={inputCls} value={e.titleUrl} onChange={(ev) => upd("titleUrl", ev.target.value)} placeholder="https://..." />
-              </div>
-            </div>
-
-            <div>
-              <Label hint={`${e.description.length}/4096`}>Description</Label>
+        {mode === "container" ? (
+          <ContainerEditor ct={ct} setCt={setCt} comps={comps} setComps={setComps} newId={id} />
+        ) : (
+          <div className="space-y-6">
+            <section className={card}>
+              <Label hint={`${content.length}/2000`}>Message content</Label>
               <textarea
+                value={content}
+                onChange={(ev) => setContent(ev.target.value)}
+                maxLength={2000}
+                rows={2}
+                placeholder="Text above the embed (optional)"
                 className={`${inputCls} resize-y`}
-                rows={5}
-                maxLength={4096}
-                value={e.description}
-                onChange={(ev) => upd("description", ev.target.value)}
-                placeholder="Supports **bold**, *italic*, __underline__, ~~strike~~, `code` and [links](https://...)"
               />
-            </div>
+            </section>
 
-            <div className="grid gap-3 sm:grid-cols-[auto_1fr_1fr]">
-              <div>
-                <Label>Color</Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={e.color}
-                    onChange={(ev) => upd("color", ev.target.value)}
-                    aria-label="Embed color"
-                    className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.07] bg-black/30 p-1"
-                  />
-                  <input
-                    className={`${inputCls} w-28 font-mono`}
-                    value={e.color}
-                    maxLength={7}
-                    onChange={(ev) => upd("color", ev.target.value)}
-                  />
+            <section className={`${card} space-y-4`}>
+              <h2 className="font-semibold text-fg">Embed</h2>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Author name</Label>
+                  <input className={inputCls} maxLength={256} value={e.authorName} onChange={(ev) => upd("authorName", ev.target.value)} placeholder="Author" />
+                </div>
+                <div>
+                  <Label>Author icon URL</Label>
+                  <input className={inputCls} value={e.authorIcon} onChange={(ev) => upd("authorIcon", ev.target.value)} placeholder="https://..." />
                 </div>
               </div>
-              <div>
-                <Label>Thumbnail URL</Label>
-                <input className={inputCls} value={e.thumbnail} onChange={(ev) => upd("thumbnail", ev.target.value)} placeholder="https://..." />
-              </div>
-              <div>
-                <Label>Image URL</Label>
-                <input className={inputCls} value={e.image} onChange={(ev) => upd("image", ev.target.value)} placeholder="https://..." />
-              </div>
-            </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label hint={`${e.footerText.length}/2048`}>Footer text</Label>
-                <input className={inputCls} maxLength={2048} value={e.footerText} onChange={(ev) => upd("footerText", ev.target.value)} placeholder="Footer" />
-              </div>
-              <div>
-                <Label>Footer icon URL</Label>
-                <input className={inputCls} value={e.footerIcon} onChange={(ev) => upd("footerIcon", ev.target.value)} placeholder="https://..." />
-              </div>
-            </div>
-
-            <Toggle checked={e.timestamp} onChange={(v) => upd("timestamp", v)}>
-              Show timestamp
-            </Toggle>
-          </section>
-
-          {/* fields */}
-          <section className={`${card} space-y-3`}>
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-fg">
-                Fields <span className="text-sm font-normal text-white/40">{fields.length}/{LIMITS.fields}</span>
-              </h2>
-              <button
-                disabled={fields.length >= LIMITS.fields}
-                onClick={() => setFields((fs) => [...fs, { id: id(), name: "", value: "", inline: true }])}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
-              >
-                <Plus size={16} /> Add field
-              </button>
-            </div>
-            {fields.length === 0 && <p className="text-sm text-white/40">No fields yet.</p>}
-            {fields.map((f, i) => (
-              <div key={f.id} className="space-y-2 rounded-xl border border-white/[0.07] bg-black/20 p-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 text-xs text-white/30">{i + 1}</span>
-                  <input
-                    className={inputCls}
-                    maxLength={256}
-                    value={f.name}
-                    onChange={(ev) => updField(f.id, { name: ev.target.value })}
-                    placeholder="Field name"
-                  />
-                  <button
-                    onClick={() => setFields((fs) => fs.filter((x) => x.id !== f.id))}
-                    aria-label={`Remove field ${i + 1}`}
-                    className="shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label hint={`${e.title.length}/256`}>Title</Label>
+                  <input className={inputCls} maxLength={256} value={e.title} onChange={(ev) => upd("title", ev.target.value)} placeholder="Title" />
                 </div>
+                <div>
+                  <Label>Title URL</Label>
+                  <input className={inputCls} value={e.titleUrl} onChange={(ev) => upd("titleUrl", ev.target.value)} placeholder="https://..." />
+                </div>
+              </div>
+
+              <div>
+                <Label hint={`${e.description.length}/4096`}>Description</Label>
                 <textarea
                   className={`${inputCls} resize-y`}
-                  rows={2}
-                  maxLength={1024}
-                  value={f.value}
-                  onChange={(ev) => updField(f.id, { value: ev.target.value })}
-                  placeholder="Field value"
+                  rows={5}
+                  maxLength={4096}
+                  value={e.description}
+                  onChange={(ev) => upd("description", ev.target.value)}
+                  placeholder="Supports **bold**, *italic*, __underline__, ~~strike~~, `code` and [links](https://...)"
                 />
-                <Toggle checked={f.inline} onChange={(v) => updField(f.id, { inline: v })}>
-                  Inline
-                </Toggle>
               </div>
-            ))}
-          </section>
 
-          {/* buttons */}
-          <section className={`${card} space-y-3`}>
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-fg">
-                Buttons <span className="text-sm font-normal text-white/40">{btns.length}/{LIMITS.buttons}</span>
-              </h2>
-              <button
-                disabled={btns.length >= LIMITS.buttons}
-                onClick={() =>
-                  setBtns((bs) => [...bs, { id: id(), label: "Button", style: "primary", url: "", emoji: "", disabled: false }])
-                }
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
-              >
-                <Plus size={16} /> Add button
-              </button>
-            </div>
-            {btns.length === 0 && <p className="text-sm text-white/40">No buttons yet.</p>}
-            {btns.map((b, i) => (
-              <div key={b.id} className="space-y-2 rounded-xl border border-white/[0.07] bg-black/20 p-3">
-                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_5rem_auto]">
-                  <input
-                    className={inputCls}
-                    maxLength={80}
-                    value={b.label}
-                    onChange={(ev) => updBtn(b.id, { label: ev.target.value })}
-                    placeholder="Label"
-                  />
-                  <select
-                    className={inputCls}
-                    value={b.style}
-                    onChange={(ev) => updBtn(b.id, { style: ev.target.value as BtnStyle })}
-                    aria-label="Button style"
-                  >
-                    {BTN_STYLES.map((s) => (
-                      <option key={s.id} value={s.id} className="bg-[#121413]">
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    className={inputCls}
-                    value={b.emoji}
-                    onChange={(ev) => updBtn(b.id, { emoji: ev.target.value })}
-                    placeholder="😀"
-                    aria-label="Emoji"
-                  />
-                  <button
-                    onClick={() => setBtns((bs) => bs.filter((x) => x.id !== b.id))}
-                    aria-label={`Remove button ${i + 1}`}
-                    className="rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+              <div className="grid gap-3 sm:grid-cols-[auto_1fr_1fr]">
+                <div>
+                  <Label>Color</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={e.color}
+                      onChange={(ev) => upd("color", ev.target.value)}
+                      aria-label="Embed color"
+                      className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.07] bg-black/30 p-1"
+                    />
+                    <input
+                      className={`${inputCls} w-28 font-mono`}
+                      value={e.color}
+                      maxLength={7}
+                      onChange={(ev) => upd("color", ev.target.value)}
+                    />
+                  </div>
                 </div>
-                {b.style === "link" && (
-                  <input
-                    className={inputCls}
-                    value={b.url}
-                    onChange={(ev) => updBtn(b.id, { url: ev.target.value })}
-                    placeholder="https://..."
-                  />
-                )}
-                <Toggle checked={b.disabled} onChange={(v) => updBtn(b.id, { disabled: v })}>
-                  Disabled
-                </Toggle>
+                <div>
+                  <Label>Thumbnail URL</Label>
+                  <input className={inputCls} value={e.thumbnail} onChange={(ev) => upd("thumbnail", ev.target.value)} placeholder="https://..." />
+                </div>
+                <div>
+                  <Label>Image URL</Label>
+                  <input className={inputCls} value={e.image} onChange={(ev) => upd("image", ev.target.value)} placeholder="https://..." />
+                </div>
               </div>
-            ))}
-          </section>
-        </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label hint={`${e.footerText.length}/2048`}>Footer text</Label>
+                  <input className={inputCls} maxLength={2048} value={e.footerText} onChange={(ev) => upd("footerText", ev.target.value)} placeholder="Footer" />
+                </div>
+                <div>
+                  <Label>Footer icon URL</Label>
+                  <input className={inputCls} value={e.footerIcon} onChange={(ev) => upd("footerIcon", ev.target.value)} placeholder="https://..." />
+                </div>
+              </div>
+
+              <Toggle checked={e.timestamp} onChange={(v) => upd("timestamp", v)}>
+                Show timestamp
+              </Toggle>
+            </section>
+
+            {/* fields */}
+            <section className={`${card} space-y-3`}>
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-fg">
+                  Fields <span className="text-sm font-normal text-white/40">{fields.length}/{LIMITS.fields}</span>
+                </h2>
+                <button
+                  disabled={fields.length >= LIMITS.fields}
+                  onClick={() => setFields((fs) => [...fs, { id: id(), name: "", value: "", inline: true }])}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
+                >
+                  <Plus size={16} /> Add field
+                </button>
+              </div>
+              {fields.length === 0 && <p className="text-sm text-white/40">No fields yet.</p>}
+              {fields.map((f, i) => (
+                <div key={f.id} className="space-y-2 rounded-xl border border-white/[0.07] bg-black/20 p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 text-xs text-white/30">{i + 1}</span>
+                    <input
+                      className={inputCls}
+                      maxLength={256}
+                      value={f.name}
+                      onChange={(ev) => updField(f.id, { name: ev.target.value })}
+                      placeholder="Field name"
+                    />
+                    <button
+                      onClick={() => setFields((fs) => fs.filter((x) => x.id !== f.id))}
+                      aria-label={`Remove field ${i + 1}`}
+                      className="shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <textarea
+                    className={`${inputCls} resize-y`}
+                    rows={2}
+                    maxLength={1024}
+                    value={f.value}
+                    onChange={(ev) => updField(f.id, { value: ev.target.value })}
+                    placeholder="Field value"
+                  />
+                  <Toggle checked={f.inline} onChange={(v) => updField(f.id, { inline: v })}>
+                    Inline
+                  </Toggle>
+                </div>
+              ))}
+            </section>
+
+            {/* buttons */}
+            <section className={`${card} space-y-3`}>
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-fg">
+                  Buttons <span className="text-sm font-normal text-white/40">{btns.length}/{LIMITS.buttons}</span>
+                </h2>
+                <button
+                  disabled={btns.length >= LIMITS.buttons}
+                  onClick={() => setBtns((bs) => [...bs, newBtn(id())])}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
+                >
+                  <Plus size={16} /> Add button
+                </button>
+              </div>
+              {btns.length === 0 && <p className="text-sm text-white/40">No buttons yet.</p>}
+              {btns.map((b, i) => (
+                <div key={b.id} className="rounded-xl border border-white/[0.07] bg-black/20 p-3">
+                  <BtnRow
+                    b={b}
+                    onChange={(patch) => updBtn(b.id, patch)}
+                    onRemove={() => setBtns((bs) => bs.filter((x) => x.id !== b.id))}
+                  />
+                  <span className="sr-only">Button {i + 1}</span>
+                </div>
+              ))}
+            </section>
+          </div>
+        )}
 
         {/* ----------------------------- preview ----------------------------- */}
         <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
@@ -606,108 +1222,99 @@ export default function EmbedBuilder() {
                     <span className="text-xs text-[#949ba4]">Today at {time}</span>
                   </div>
 
-                  {content && (
-                    <div className="mt-0.5 whitespace-pre-wrap break-words text-[15px] leading-[1.375]">
-                      <Md text={content} />
-                    </div>
-                  )}
+                  {mode === "container" ? (
+                    <ContainerPreview ct={ct} comps={comps} />
+                  ) : (
+                    <>
+                      {content && (
+                        <div className="mt-0.5 whitespace-pre-wrap break-words text-[15px] leading-[1.375]">
+                          <Md text={content} />
+                        </div>
+                      )}
 
-                  {hasEmbed && (
-                    <div
-                      className="mt-1.5 grid max-w-[520px] rounded border border-[#1e1f22] border-l-4 bg-[#2b2d31] py-2 pl-3 pr-4 pb-4"
-                      style={{ borderLeftColor: e.color }}
-                    >
-                      <div className="flex gap-4">
-                        <div className="min-w-0 flex-1 space-y-2">
-                          {e.authorName && (
-                            <div className="mt-1 flex items-center gap-2">
-                              {hasUrl(e.authorIcon) && (
-                                <img src={e.authorIcon} alt="" className="h-6 w-6 rounded-full object-cover" />
+                      {hasEmbed && (
+                        <div
+                          className="mt-1.5 grid max-w-[520px] rounded border border-[#1e1f22] border-l-4 bg-[#2b2d31] py-2 pl-3 pr-4 pb-4"
+                          style={{ borderLeftColor: e.color }}
+                        >
+                          <div className="flex gap-4">
+                            <div className="min-w-0 flex-1 space-y-2">
+                              {e.authorName && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  {hasUrl(e.authorIcon) && (
+                                    <img src={e.authorIcon} alt="" className="h-6 w-6 rounded-full object-cover" />
+                                  )}
+                                  <span className="text-sm font-semibold text-white">{e.authorName}</span>
+                                </div>
                               )}
-                              <span className="text-sm font-semibold text-white">{e.authorName}</span>
-                            </div>
-                          )}
 
-                          {e.title &&
-                            (hasUrl(e.titleUrl) ? (
-                              <a href={e.titleUrl} target="_blank" rel="noreferrer noopener" className="block break-words text-base font-semibold text-[#00a8fc] hover:underline">
-                                {e.title}
-                              </a>
-                            ) : (
-                              <div className="break-words text-base font-semibold text-white">{e.title}</div>
-                            ))}
+                              {e.title &&
+                                (hasUrl(e.titleUrl) ? (
+                                  <a href={e.titleUrl} target="_blank" rel="noreferrer noopener" className="block break-words text-base font-semibold text-[#00a8fc] hover:underline">
+                                    {e.title}
+                                  </a>
+                                ) : (
+                                  <div className="break-words text-base font-semibold text-white">{e.title}</div>
+                                ))}
 
-                          {e.description && (
-                            <div className="whitespace-pre-wrap break-words text-sm leading-[1.375]">
-                              <Md text={e.description} />
-                            </div>
-                          )}
+                              {e.description && (
+                                <div className="whitespace-pre-wrap break-words text-sm leading-[1.375]">
+                                  <Md text={e.description} />
+                                </div>
+                              )}
 
-                          {rows.length > 0 && (
-                            <div className="space-y-2">
-                              {rows.map((row, ri) => (
-                                <div key={ri} className="grid gap-x-3 gap-y-2" style={{ gridTemplateColumns: `repeat(${row[0].inline ? 3 : 1}, minmax(0, 1fr))` }}>
-                                  {row.map((f) => (
-                                    <div key={f.id} className="min-w-0">
-                                      {f.name && <div className="break-words text-sm font-semibold text-white">{f.name}</div>}
-                                      {f.value && (
-                                        <div className="whitespace-pre-wrap break-words text-sm leading-[1.375]">
-                                          <Md text={f.value} />
+                              {rows.length > 0 && (
+                                <div className="space-y-2">
+                                  {rows.map((row, ri) => (
+                                    <div key={ri} className="grid gap-x-3 gap-y-2" style={{ gridTemplateColumns: `repeat(${row[0].inline ? 3 : 1}, minmax(0, 1fr))` }}>
+                                      {row.map((f) => (
+                                        <div key={f.id} className="min-w-0">
+                                          {f.name && <div className="break-words text-sm font-semibold text-white">{f.name}</div>}
+                                          {f.value && (
+                                            <div className="whitespace-pre-wrap break-words text-sm leading-[1.375]">
+                                              <Md text={f.value} />
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
+                                      ))}
                                     </div>
                                   ))}
                                 </div>
-                              ))}
+                              )}
+                            </div>
+
+                            {hasUrl(e.thumbnail) && (
+                              <img src={e.thumbnail} alt="" className="mt-1 h-20 w-20 shrink-0 rounded object-cover" />
+                            )}
+                          </div>
+
+                          {hasUrl(e.image) && (
+                            <img src={e.image} alt="" className="mt-4 max-h-[300px] w-full rounded object-cover" />
+                          )}
+
+                          {(e.footerText || e.timestamp) && (
+                            <div className="mt-2 flex items-center gap-2 text-xs text-[#b5bac1]">
+                              {e.footerText && hasUrl(e.footerIcon) && (
+                                <img src={e.footerIcon} alt="" className="h-5 w-5 rounded-full object-cover" />
+                              )}
+                              <span className="font-medium">
+                                {e.footerText}
+                                {e.footerText && e.timestamp && " • "}
+                                {e.timestamp && `Today at ${time}`}
+                              </span>
                             </div>
                           )}
                         </div>
-
-                        {hasUrl(e.thumbnail) && (
-                          <img src={e.thumbnail} alt="" className="mt-1 h-20 w-20 shrink-0 rounded object-cover" />
-                        )}
-                      </div>
-
-                      {hasUrl(e.image) && (
-                        <img src={e.image} alt="" className="mt-4 max-h-[300px] w-full rounded object-cover" />
                       )}
 
-                      {(e.footerText || e.timestamp) && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-[#b5bac1]">
-                          {e.footerText && hasUrl(e.footerIcon) && (
-                            <img src={e.footerIcon} alt="" className="h-5 w-5 rounded-full object-cover" />
-                          )}
-                          <span className="font-medium">
-                            {e.footerText}
-                            {e.footerText && e.timestamp && " • "}
-                            {e.timestamp && `Today at ${time}`}
-                          </span>
+                      {btns.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {btns.map((b) => (
+                            <PreviewBtn key={b.id} b={b} />
+                          ))}
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {btns.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {btns.map((b) => {
-                        const st = BTN_STYLES.find((s) => s.id === b.style)!;
-                        return (
-                          <button
-                            key={b.id}
-                            type="button"
-                            tabIndex={-1}
-                            style={{ backgroundColor: st.bg }}
-                            className={`inline-flex h-8 items-center gap-1.5 rounded px-4 text-sm font-medium text-white transition-[filter] ${
-                              b.disabled ? "cursor-not-allowed opacity-50" : "hover:brightness-90"
-                            }`}
-                          >
-                            {b.emoji && <span>{b.emoji}</span>}
-                            {b.label}
-                            {b.style === "link" && <ExternalLink size={14} />}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
