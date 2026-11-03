@@ -1218,7 +1218,15 @@ export default function EmbedBuilder() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 leading-tight">
                     <span className="font-medium text-white">{BOT_NAME}</span>
-                    <span className="rounded bg-[#5865f2] px-1.5 py-px text-[10px] font-semibold uppercase leading-[15px] text-white">App</span>
+                    <span
+                      title="Verified App"
+                      className="inline-flex items-center gap-0.5 rounded bg-[#5865f2] px-1.5 py-px text-[10px] font-semibold uppercase leading-[15px] text-white"
+                    >
+                      <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor" aria-hidden="true">
+                        <path d="M6.4 11.8 2.6 8l1.4-1.4 2.4 2.4 5.6-5.6L13.4 4.8z" />
+                      </svg>
+                      App
+                    </span>
                     <span className="text-xs text-[#949ba4]">Today at {time}</span>
                   </div>
 
