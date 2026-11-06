@@ -42,7 +42,7 @@ function smooth(p: Pt[]) {
 }
 
 const fmtDay = (d: string, o: Intl.DateTimeFormatOptions) =>
-  new Date(d + "T00:00:00Z").toLocaleDateString(undefined, { ...o, timeZone: "UTC" });
+  new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { ...o, timeZone: "UTC" });
 
 export default function UsageGraph({ usage }: { usage?: Usage }) {
   const days = usage?.days ?? [];
@@ -71,9 +71,9 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
         <b style={{ fontSize: "1.5rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
-          {usage!.average.toLocaleString()} avg / day
+          {usage!.average.toLocaleString("en-US")} avg / day
         </b>
-        <span style={{ color: MUTED, fontSize: ".85rem" }}>{total.toLocaleString()} commands in 7 days</span>
+        <span style={{ color: MUTED, fontSize: ".85rem" }}>{total.toLocaleString("en-US")} commands in 7 days</span>
       </div>
 
       <div style={{ position: "relative" }}>
@@ -101,7 +101,7 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
             <g key={i}>
               <line x1={L} x2={W - R} y1={y(i * step)} y2={y(i * step)} stroke={LINE} strokeDasharray="2 4" />
               <text x={L - 8} y={y(i * step) + 4} textAnchor="end" fill={MUTED} fontSize="11">
-                {(i * step).toLocaleString(undefined, { notation: "compact" })}
+                {(i * step).toLocaleString("en-US", { notation: "compact" })}
               </text>
             </g>
           ))}
@@ -138,7 +138,7 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
           <span style={{ display: "block", color: MUTED, fontSize: ".72rem" }}>
             {fmtDay(days[active].date, { weekday: "long", month: "short", day: "numeric" })}
           </span>
-          <b style={{ fontWeight: 600 }}>{days[active].uses.toLocaleString()} commands</b>
+          <b style={{ fontWeight: 600 }}>{days[active].uses.toLocaleString("en-US")} commands</b>
         </div>
       </div>
     </div>
