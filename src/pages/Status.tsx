@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { BOT_NAME } from "@/config";
 import { fetchStatus, type ShardStatus } from "@/lib/api";
+import UsageGraph from "@/components/UsageGraph";
 
 const fmtUptime = (s: number) => {
   const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
@@ -60,6 +61,12 @@ export default function Status() {
         <Stat label="Latency" value={ms(data.ping)} />
         <Stat label="Uptime" value={fmtUptime(data.uptime)} sub={`${up}/${shards.length} shards up`} />
       </div>
+      {data.usage && (<>
+        <h2 className="mb-4 mt-12 text-2xl">Command usage</h2>
+        <div className="rounded-3xl border border-line bg-[#101012] p-6">
+          <UsageGraph usage={data.usage} />
+        </div>
+      </>)}
       <h2 className="mb-4 mt-12 text-2xl">Shards</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {shards.map((s) => (
