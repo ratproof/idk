@@ -5,6 +5,7 @@ export type Usage = {
   average: number;
 };
 
+const RANGES = [3, 7, 14, 30];
 const W = 600, H = 240, L = 40, R = 16, T = 16, B = 30;
 const ACCENT = "#4f8cff";
 const MUTED = "#8b8b94";
@@ -45,13 +46,18 @@ const fmtDay = (d: string, o: Intl.DateTimeFormatOptions) =>
   new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { ...o, timeZone: "UTC" });
 
 export default function UsageGraph({ usage }: { usage?: Usage }) {
-  const days = usage?.days ?? [];
-  const n = days.length;
+  const all = usage?.days ?? [];
+  const [range, setRange] = useState(7);
   const [hover, setHover] = useState<number | null>(null);
 
-  if (!n) return <div style={{ color: MUTED }}>no usage data yet</div>;
+  if (!all.length) return <div style={{ color: MUTED }}>no usage data yet</div>;
 
-  const active = hover ?? n - 1;
+  const days = all.slice(-range);
+  const n = days.length;
+  const active = Math.min(hover ?? n - 1, n - 1);
+  const total = days.reduce((a, d) => a + d.uses, 0);
+  const average = Math.round((total / n) * 10) / 10;
+
   const maxV = Math.max(1, ...days.map((d) => d.uses));
   const raw = maxV / 4;
   const pow = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -63,24 +69,49 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
   const y = (v: number) => H - B - (v / top) * (H - B - T);
   const pts: Pt[] = days.map((d, i) => [x(i), y(d.uses)]);
   const curve = smooth(pts);
-  const total = days.reduce((a, d) => a + d.uses, 0);
   const [ax, ay] = pts[active];
   const xp = (ax / W) * 100;
 
+  const every = n <= 7 ? 1 : n <= 14 ? 2 : 5;
+  const labelOpts: Intl.DateTimeFormatOptions = n <= 7 ? { weekday: "short" } : { month: "short", day: "numeric" };
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-        <b style={{ fontSize: "1.5rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
-          {usage!.average.toLocaleString("en-US")} avg / day
-        </b>
-        <span style={{ color: MUTED, fontSize: ".85rem" }}>{total.toLocaleString("en-US")} commands in 7 days</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+        <div>
+          <b style={{ display: "block", fontSize: "1.5rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
+            {average.toLocaleString("en-US", { maximumFractionDigits: 1 })} avg / day
+          </b>
+          <span style={{ color: MUTED, fontSize: ".85rem" }}>
+            {total.toLocaleString("en-US")} commands in {n} days
+          </span>
+        </div>
+        <div style={{ display: "flex", border: `1px solid ${LINE}`, borderRadius: 10, overflow: "hidden", background: "#0f0f12" }}>
+          {RANGES.map((r, i) => (
+            <button
+              key={r}
+              type="button"
+              aria-pressed={r === range}
+              aria-label={`Last ${r} days`}
+              onClick={() => { setRange(r); setHover(null); }}
+              style={{
+                border: 0, borderLeft: i ? `1px solid ${LINE}` : 0, cursor: "pointer",
+                padding: ".3rem .7rem", fontSize: ".8rem", font: "inherit",
+                color: r === range ? "#a9c8ff" : MUTED,
+                background: r === range ? "rgba(79,140,255,0.18)" : "transparent",
+              }}
+            >
+              {r}d
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ position: "relative" }}>
         <svg
           viewBox={`0 0 ${W} ${H}`}
           role="img"
-          aria-label="commands used per day over the last 7 days"
+          aria-label={`commands used per day over the last ${n} days`}
           style={{ display: "block", width: "100%", height: "auto", overflow: "visible", touchAction: "pan-y" }}
           onPointerMove={(e) => {
             const r = e.currentTarget.getBoundingClientRect();
@@ -107,24 +138,23 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
           ))}
 
           <path d={`${curve} L${pts[n - 1][0].toFixed(1)} ${H - B} L${pts[0][0].toFixed(1)} ${H - B} Z`} fill="url(#usageFill)" />
-          <line
-            x1={L} x2={W - R} y1={y(usage!.average)} y2={y(usage!.average)}
-            stroke="rgba(255,255,255,0.22)" strokeDasharray="4 4"
-          />
+          <line x1={L} x2={W - R} y1={y(average)} y2={y(average)} stroke="rgba(255,255,255,0.22)" strokeDasharray="4 4" />
           <path d={curve} fill="none" stroke={ACCENT} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
           <line x1={ax} x2={ax} y1={T} y2={H - B} stroke="rgba(255,255,255,0.18)" />
           <circle cx={ax} cy={ay} r="10" fill={ACCENT} opacity=".2" />
           <circle cx={ax} cy={ay} r="4.5" fill={ACCENT} stroke="#0e0e11" strokeWidth="2" />
 
-          {days.map((d, i) => (
-            <text
-              key={d.date} x={x(i)} y={H - 8} textAnchor="middle" fontSize="11"
-              fill={i === active ? "#f4f4f5" : MUTED}
-            >
-              {fmtDay(d.date, { weekday: "short" })}
-            </text>
-          ))}
+          {days.map((d, i) =>
+            (n - 1 - i) % every === 0 ? (
+              <text
+                key={d.date} x={x(i)} y={H - 8} textAnchor="middle" fontSize="11"
+                fill={i === active ? "#f4f4f5" : MUTED}
+              >
+                {fmtDay(d.date, labelOpts)}
+              </text>
+            ) : null,
+          )}
         </svg>
 
         <div
