@@ -86,8 +86,8 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
             {total.toLocaleString("en-US")} commands in {n} days
           </span>
         </div>
-        <div style={{ display: "flex", border: `1px solid ${LINE}`, borderRadius: 10, overflow: "hidden", background: "#0f0f12" }}>
-          {RANGES.map((r, i) => (
+        <div style={{ display: "flex", gap: 18, marginTop: 4 }}>
+          {RANGES.map((r) => (
             <button
               key={r}
               type="button"
@@ -95,13 +95,13 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
               aria-label={`Last ${r} days`}
               onClick={() => { setRange(r); setHover(null); }}
               style={{
-                border: 0, borderLeft: i ? `1px solid ${LINE}` : 0, cursor: "pointer",
-                padding: ".3rem .7rem", fontSize: ".8rem", font: "inherit",
-                color: r === range ? "#a9c8ff" : MUTED,
-                background: r === range ? "rgba(79,140,255,0.18)" : "transparent",
+                background: "none", border: 0, borderBottom: `2px solid ${r === range ? ACCENT : "transparent"}`,
+                padding: ".2rem 0", cursor: "pointer", fontFamily: "inherit", fontSize: ".8rem",
+                fontWeight: 500, letterSpacing: ".04em", transition: "color .2s, border-color .2s",
+                color: r === range ? "#f4f4f5" : MUTED,
               }}
             >
-              {r}d
+              {r}D
             </button>
           ))}
         </div>
