@@ -64,6 +64,7 @@ export interface ShardStatus { id: number; ping: number | null; guilds?: number;
 export interface BotStatus {
   guilds: number; users: number; prefix: string; avatar_url: string | null;
   uptime: number; ping: number; shard_count: number; shards: ShardStatus[] | null;
+  usage?: { days: { date: string; uses: number }[]; average: number };
 }
 export async function fetchStatus(): Promise<BotStatus> {
   const res = await fetch(STATUS_URL);
