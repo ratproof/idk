@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import LogoLoop from "./LogoLoop";
+import LogoLoop from "@/components/LogoLoop";
 
 type Server = {
   id: string;
