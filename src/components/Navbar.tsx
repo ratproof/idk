@@ -1,7 +1,59 @@
 import { useEffect, useState } from "react";
+import type { AnchorHTMLAttributes, CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import CardNav from "./CardNav";
+import type { CardNavItem } from "./CardNav";
 import { BOT_NAME, INVITE_URL, SUPPORT_URL } from "@/config";
+
+const items: CardNavItem[] = [
+  {
+    label: "Explore",
+    description: "Everything the bot can do.",
+    links: [
+      { label: "Commands", href: "/commands" },
+      { label: "Embeds", href: "/embeds" },
+    ],
+  },
+  {
+    label: "Help",
+    description: "Check on the bot or get a hand.",
+    links: [
+      { label: "Status", href: "/status" },
+      { label: "Support", href: SUPPORT_URL },
+    ],
+  },
+  {
+    label: "Legal",
+    description: "The fine print.",
+    links: [
+      { label: "Terms", href: "/terms" },
+      { label: "Privacy", href: "/privacy" },
+    ],
+  },
+];
+
+// CardNav passes `href`; react-router wants `to`. Internal paths go through
+// the router, external URLs (support server, invite) stay plain anchors.
+type NavLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & { href: string };
+
+const NavLink = ({ href, children, ...rest }: NavLinkProps) =>
+  href.startsWith("/") ? (
+    <Link to={href} {...rest}>
+      {children}
+    </Link>
+  ) : (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  );
+
+// Match the site's dark panel colours instead of CardNav's default purple.
+const theme = {
+  "--cn-panel": "rgba(18, 20, 19, 0.8)",
+  "--cn-solid": "#121413",
+  "--cn-edge": "rgba(255, 255, 255, 0.07)",
+  "--cn-tile": "linear-gradient(180deg, #1b1e1c 0%, #141716 100%)",
+} as CSSProperties;
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -14,46 +66,36 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // never hide while the mobile menu is open
+  // never hide while the menu is open
   const hidden = scrolled && !open;
-
-  const l = "font-medium text-fg transition-colors hover:text-accent-soft";
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-transform duration-300 ${
-        hidden ? "-translate-y-full" : ""
+      className={`fixed inset-x-0 top-0 z-50 px-4 pt-3 transition-transform duration-300 ${
+        hidden ? "-translate-y-[130%]" : ""
       }`}
     >
-      <div className="mx-auto grid h-20 max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4">
-        <Link to="/" aria-label={`${BOT_NAME} home`} className="justify-self-start">
-          <img src="/favicon.png" alt={BOT_NAME} width={40} height={40} className="h-10 w-10 rounded-full" />
-        </Link>
-
-        <nav aria-label="Main" className="hidden items-center gap-10 rounded-[22px] border border-white/[0.07] bg-[#121413]/80 px-9 py-3.5 backdrop-blur-xl md:flex">
-          <Link to="/commands" className={l}>Commands</Link>
-          <Link to="/embeds" className={l}>Embeds</Link>
-          <Link to="/status" className={l}>Status</Link>
-          <a href={SUPPORT_URL} className={l}>Support</a>
-        </nav>
-
-        <div className="col-start-3 flex items-center justify-self-end">
-          <a href={INVITE_URL} className="btn btn-accent hidden !py-2 md:inline-flex">Invite</a>
-          <button className="md:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen(!open)}>
-            {open ? <X /> : <Menu />}
-          </button>
-        </div>
-      </div>
-
-      {open && (
-        <nav aria-label="Mobile" className="mx-4 flex flex-col gap-4 rounded-[22px] border border-white/[0.07] bg-[#121413]/95 p-6 backdrop-blur-xl md:hidden">
-          <Link to="/commands" onClick={() => setOpen(false)} className={l}>Commands</Link>
-          <Link to="/embeds" onClick={() => setOpen(false)} className={l}>Embeds</Link>
-          <Link to="/status" onClick={() => setOpen(false)} className={l}>Status</Link>
-          <a href={SUPPORT_URL} className={l}>Support</a>
-          <a href={INVITE_URL} className="btn btn-accent justify-center">Invite</a>
-        </nav>
-      )}
+      <CardNav
+        logo={
+          <img
+            src="/favicon.png"
+            alt=""
+            width={24}
+            height={24}
+            className="rounded-full"
+          />
+        }
+        logoAlt={`${BOT_NAME} home`}
+        logoHref="/"
+        items={items}
+        cta={{ label: "Invite", href: INVITE_URL }}
+        cardEffect="rise"
+        openOn="click"
+        linkComponent={NavLink}
+        onOpenChange={setOpen}
+        ariaLabel="Main"
+        style={theme}
+      />
     </header>
   );
 }
