@@ -1,4 +1,8 @@
+
 .card-nav {
+  --cn-bar: 48px;
+  --cn-logo: 24px;
+
   position: relative;
   width: 100%;
   max-width: var(--cn-max);
