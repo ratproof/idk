@@ -36,6 +36,8 @@ export interface CardNavProps {
   speed?: number;
   cardHeight?: number;
   maxWidth?: number;
+  /** Height of the collapsed bar in px. Default 52. */
+  barHeight?: number;
   accentColor?: string;
   menuLabel?: boolean;
   intro?: boolean;
