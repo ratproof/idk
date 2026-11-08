@@ -144,6 +144,7 @@ const CardNav = ({
   speed = 1,
   cardHeight = 176,
   maxWidth = 800,
+  barHeight = 52,
   accentColor,
   menuLabel = true,
   intro = true,
@@ -189,7 +190,7 @@ const CardNav = ({
   const vars = {
     ...palette,
     '--cn-max': `${maxWidth}px`,
-    '--cn-bar': '60px',
+    '--cn-bar': `${barHeight}px`,
     '--cn-inset': '8px',
     '--cn-gap': '8px',
     '--cn-radius': '18px',
@@ -216,19 +217,44 @@ const CardNav = ({
   const setOpenRef = useRef(setOpen);
   setOpenRef.current = setOpen;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const panel = panelRef.current;
     const content = contentRef.current;
     if (!panel || !content) return undefined;
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    const state = { p: settingsRef.current.open ? 1 : 0, v: 0, height: content.offsetHeight, bar: 60 };
+    const state = { p: settingsRef.current.open ? 1 : 0, v: 0, height: content.offsetHeight, bar: 60, full: 0, collapsed: 0 };
     let raf = 0;
     let last = 0;
+
+    const measure = () => {
+      const root = rootRef.current;
+      const bar = barRef.current;
+      state.full = root ? root.offsetWidth : 0;
+      state.collapsed = state.full;
+      if (bar && !narrow) {
+        const prev = bar.style.width;
+        bar.style.width = 'max-content';
+        state.collapsed = Math.min(state.full, bar.offsetWidth);
+        bar.style.width = prev;
+      }
+      state.height = content.offsetHeight;
+    };
 
     const render = () => {
       const s = settingsRef.current;
       state.bar = parseFloat(getComputedStyle(panel).getPropertyValue('--cn-bar')) || 60;
       panel.style.height = `${state.bar + Math.max(0, state.p) * state.height}px`;
+      if (state.full) {
+        const width = state.collapsed + (state.full - state.collapsed) * clamp(state.p, 0, 1);
+        panel.style.left = '50%';
+        panel.style.right = 'auto';
+        panel.style.transform = 'translateX(-50%)';
+        panel.style.width = `${width}px`;
+        content.style.left = '50%';
+        content.style.right = 'auto';
+        content.style.transform = 'translateX(-50%)';
+        content.style.width = `${state.full}px`;
+      }
       const cards = cardRefs.current.filter(Boolean);
       const count = cards.length;
       const lag = count > 1 ? Math.min(s.stagger, 0.7 / (count - 1)) : 0;
@@ -291,17 +317,19 @@ const CardNav = ({
     engineRef.current = {
       wake,
       refresh: () => {
-        state.height = content.offsetHeight;
+        measure();
         render();
       }
     };
 
+    measure();
     render();
     const observer = new ResizeObserver(() => {
-      state.height = content.offsetHeight;
+      measure();
       render();
     });
     observer.observe(content);
+    if (rootRef.current) observer.observe(rootRef.current);
 
     return () => {
       cancelAnimationFrame(raf);
@@ -436,10 +464,14 @@ const CardNav = ({
       data-shown={shown || open ? '' : undefined}
       data-narrow={narrow ? '' : undefined}
       style={{ ...vars, ...style }}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
     >
-      <nav ref={panelRef} className={PANEL} aria-label={ariaLabel}>
+      <nav
+        ref={panelRef}
+        className={PANEL}
+        aria-label={ariaLabel}
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+      >
         <div ref={barRef} className={iconBar ? BAR_ICONS : BAR}>
           {iconBar ? (
             <>
