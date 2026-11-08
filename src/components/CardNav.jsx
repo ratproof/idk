@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowUpRight01Icon } from '@hugeicons/core-free-icons';
 import './CardNav.css';
@@ -48,6 +48,7 @@ const ROOT = 'card-nav';
 const PANEL = 'card-nav__panel';
 const RIM = 'card-nav__rim';
 const BAR = 'card-nav__bar';
+const BAR_ICONS = 'card-nav__bar card-nav__bar--icons';
 const MENU = 'card-nav__menu';
 const BURGER = 'card-nav__burger';
 const LINE_TOP = 'card-nav__line card-nav__line--top';
@@ -56,6 +57,9 @@ const MENU_LABEL = 'card-nav__menu-label';
 const WORD_OPEN = 'card-nav__word card-nav__word--open';
 const WORD_CLOSE = 'card-nav__word card-nav__word--close';
 const LOGO = 'card-nav__logo';
+const ICONS = 'card-nav__icons';
+const ICON = 'card-nav__icon';
+const ACTIONS = 'card-nav__actions';
 const CTA = 'card-nav__cta';
 const CTA_WIDE = 'card-nav__cta card-nav__cta--wide';
 const CONTENT = 'card-nav__content';
@@ -133,7 +137,7 @@ const CardNav = ({
   cta,
   theme = 'dark',
   surface = 'glass',
-  openOn = 'click',
+  openOn = 'hover',
   cardEffect = 'rise',
   stagger = 0.12,
   bounce = 0.2,
@@ -169,6 +173,7 @@ const CardNav = ({
   const controlled = openProp !== undefined;
   const hasCta = Boolean(cta);
   const open = controlled ? openProp : openState;
+  const iconBar = !narrow && items.some(item => item.icon);
 
   const settings = {
     open,
@@ -417,6 +422,12 @@ const CardNav = ({
       target.label
     );
 
+  const logoNode = logo && (
+    <LinkComponent href={logoHref} className={LOGO} aria-label={logoAlt}>
+      {typeof logo === 'string' ? <img src={logo} alt="" draggable={false} /> : logo}
+    </LinkComponent>
+  );
+
   return (
     <div
       ref={rootRef}
@@ -429,40 +440,68 @@ const CardNav = ({
       onPointerLeave={onPointerLeave}
     >
       <nav ref={panelRef} className={PANEL} aria-label={ariaLabel}>
-        <div ref={barRef} className={BAR}>
-          <button
-            ref={menuRef}
-            type="button"
-            className={MENU}
-            data-icon-only={menuLabel ? undefined : ''}
-            aria-expanded={open}
-            aria-controls={contentId}
-            aria-label={menuLabel ? undefined : open ? 'Close menu' : 'Open menu'}
-            onClick={() => setOpen(!open)}
-          >
-            <span className={BURGER} aria-hidden="true">
-              <span className={LINE_TOP} />
-              <span className={LINE_BOTTOM} />
-            </span>
-            {menuLabel && (
-              <span className={MENU_LABEL}>
-                <span className={WORD_OPEN} aria-hidden={open}>
-                  Menu
-                </span>
-                <span className={WORD_CLOSE} aria-hidden={!open}>
-                  Close
-                </span>
-              </span>
-            )}
-          </button>
+        <div ref={barRef} className={iconBar ? BAR_ICONS : BAR}>
+          {iconBar ? (
+            <>
+              {logoNode}
 
-          {logo && (
-            <LinkComponent href={logoHref} className={LOGO} aria-label={logoAlt}>
-              {typeof logo === 'string' ? <img src={logo} alt="" draggable={false} /> : logo}
-            </LinkComponent>
+              <div className={ICONS} role="group">
+                {items.map(
+                  (item, index) =>
+                    item.icon && (
+                      <Fragment key={`${item.label}-${index}`}>
+                        {anchor(
+                          { href: item.href },
+                          {
+                            className: ICON,
+                            'aria-label': item.label,
+                            'aria-expanded': item.href ? undefined : open,
+                            'aria-controls': item.href ? undefined : contentId,
+                            'data-active': item.active ? '' : undefined,
+                            onClick: () => setOpen(item.href ? false : !open)
+                          },
+                          item.icon
+                        )}
+                      </Fragment>
+                    )
+                )}
+              </div>
+
+              {cta && <div className={ACTIONS}>{ctaButton(cta, false)}</div>}
+            </>
+          ) : (
+            <>
+              <button
+                ref={menuRef}
+                type="button"
+                className={MENU}
+                data-icon-only={menuLabel ? undefined : ''}
+                aria-expanded={open}
+                aria-controls={contentId}
+                aria-label={menuLabel ? undefined : open ? 'Close menu' : 'Open menu'}
+                onClick={() => setOpen(!open)}
+              >
+                <span className={BURGER} aria-hidden="true">
+                  <span className={LINE_TOP} />
+                  <span className={LINE_BOTTOM} />
+                </span>
+                {menuLabel && (
+                  <span className={MENU_LABEL}>
+                    <span className={WORD_OPEN} aria-hidden={open}>
+                      Menu
+                    </span>
+                    <span className={WORD_CLOSE} aria-hidden={!open}>
+                      Close
+                    </span>
+                  </span>
+                )}
+              </button>
+
+              {logoNode}
+
+              {cta && !narrow && ctaButton(cta, false)}
+            </>
           )}
-
-          {cta && !narrow && ctaButton(cta, false)}
         </div>
 
         <div ref={contentRef} id={contentId} className={CONTENT} aria-hidden={!open}>
