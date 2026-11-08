@@ -1,4 +1,3 @@
-
 .card-nav {
   --cn-bar: 40px;
   --cn-logo: 24px;
@@ -48,6 +47,11 @@
   height: var(--cn-bar);
   padding: 0 var(--cn-inset);
   box-sizing: border-box;
+}
+
+.card-nav__bar--icons {
+  display: flex;
+  gap: 6px;
 }
 
 .card-nav__menu {
@@ -161,6 +165,62 @@
   display: block;
   height: 100%;
   width: auto;
+}
+
+.card-nav__bar--icons .card-nav__logo {
+  margin-left: 6px;
+}
+
+/* icon bar (collapsed state) */
+
+.card-nav__icons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.card-nav__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--cn-bar) - var(--cn-inset) * 2);
+  height: calc(var(--cn-bar) - var(--cn-inset) * 2);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--cn-radius) - var(--cn-inset));
+  background: none;
+  color: var(--cn-muted);
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.card-nav__icon svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.card-nav__icon:hover,
+.card-nav__icon[data-active] {
+  background: var(--cn-hover);
+  color: var(--cn-text);
+}
+
+.card-nav__icon:focus-visible {
+  outline: 2px solid var(--cn-ring);
+  outline-offset: 2px;
+}
+
+.card-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .card-nav__cta {
@@ -369,7 +429,8 @@
 @media (prefers-reduced-motion: reduce) {
   .card-nav__line,
   .card-nav__word,
-  .card-nav__arrow-icon {
+  .card-nav__arrow-icon,
+  .card-nav__icon {
     transition: none;
   }
 }
