@@ -1,4 +1,4 @@
-import type { ElementType, MouseEvent, CSSProperties, ReactElement } from 'react';
+import type { ElementType, MouseEvent, CSSProperties, ReactElement, ReactNode } from 'react';
 
 export interface CardNavLink {
   label: string;
@@ -13,6 +13,12 @@ export interface CardNavItem {
   links?: CardNavLink[];
   bgColor?: string;
   textColor?: string;
+  /** Icon shown in the collapsed bar. If any item has one, the icon bar is used. */
+  icon?: ReactNode;
+  /** Optional direct link for the collapsed bar icon. Without it, clicking toggles the menu. */
+  href?: string;
+  /** Highlights the icon in the collapsed bar. */
+  active?: boolean;
 }
 
 export interface CardNavProps {
