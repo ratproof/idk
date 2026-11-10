@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/api/commands", "destination": "https://bucket.stains.rocks/api/commands" },
     { "source": "/api/status", "destination": "https://bucket.stains.rocks/api/status" },
+    { "source": "/api/dash/:path*", "destination": "https://bucket.stains.rocks/api/dash/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
