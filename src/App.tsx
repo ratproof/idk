@@ -11,6 +11,7 @@ function ExternalRedirect({ to }: { to: string }) {
 }
 
 const Commands = lazy(() => import("@/pages/Commands"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Status = lazy(() => import("@/pages/Status"));
 const Legal = lazy(() => import("@/pages/Legal"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
