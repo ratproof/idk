@@ -15,7 +15,7 @@ export default function Hero() {
       <div className="relative mx-auto flex max-w-5xl flex-col items-center gap-8 text-center lg:flex-row lg:gap-12 lg:text-left">
         {showAvatar && (
           avatar
-            ? ? <img src={avatar} alt={`${BOT_NAME} avatar`} width={160} height={160} className="fade-in h-28 w-28 shrink-0 rounded-full lg:h-40 lg:w-40" />
+            ? <img src={avatar} alt={`${BOT_NAME} avatar`} width={160} height={160} className="fade-in h-28 w-28 shrink-0 rounded-full lg:h-40 lg:w-40" />
             : <div className="h-28 w-28 shrink-0 rounded-full bg-surface-2 lg:h-40 lg:w-40" aria-hidden />
         )}
         <div className="max-w-3xl">
