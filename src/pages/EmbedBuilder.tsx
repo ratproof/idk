@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   Check,
   ChevronDown,
@@ -493,7 +493,221 @@ function toContainerScript(ct: ContainerState, comps: Comp[]): string {
 const inputCls =
   "w-full rounded-lg border border-white/[0.08] bg-black/25 px-3 py-2 text-sm text-fg outline-none transition-colors placeholder:text-white/30 focus:border-[#538CE5]/70";
 
-const panelCls = "rounded-2xl border border-white/[0.07] bg-[#121413]/80 p-5 backdrop-blur-xl";
+const panelCls = "relative rounded-2xl border border-white/[0.07] bg-[#121413]/80 p-5 backdrop-blur-xl focus-within:z-30";
+
+/* ------------------------------------------------------------------ */
+/* variables (same list as the bot's variables file)                   */
+/* ------------------------------------------------------------------ */
+
+const VARIABLES: [name: string, hint: string][] = [
+  ["guild.name", "Server name"],
+  ["guild.id", "Server ID"],
+  ["guild.count", "Member count"],
+  ["guild.region", "Always N/A"],
+  ["guild.shard", "Shard ID"],
+  ["guild.owner_id", "Owner's ID"],
+  ["guild.created_at", "Created, UTC date and time"],
+  ["guild.created_at_timestamp", "Created, unix timestamp"],
+  ["guild.emoji_count", "Number of emojis"],
+  ["guild.role_count", "Number of roles"],
+  ["guild.boost_count", "Number of boosts"],
+  ["guild.boost_tier", "Boost level"],
+  ["guild.preferred_locale", "Preferred language"],
+  ["guild.key_features", "Server features"],
+  ["guild.icon", "Icon URL"],
+  ["guild.banner", "Banner URL"],
+  ["guild.splash", "Invite splash URL"],
+  ["guild.discovery", "Discovery splash URL"],
+  ["guild.max_presences", "Max presences"],
+  ["guild.max_members", "Max members"],
+  ["guild.max_video_channel_users", "Max video channel users"],
+  ["guild.afk_timeout", "AFK timeout in seconds"],
+  ["guild.afk_channel", "AFK channel name"],
+  ["guild.channels", "All channel names"],
+  ["guild.channels_count", "Number of channels"],
+  ["guild.text_channels", "Text channel names"],
+  ["guild.text_channels_count", "Number of text channels"],
+  ["guild.voice_channels", "Voice channel names"],
+  ["guild.voice_channels_count", "Number of voice channels"],
+  ["guild.category_channels", "Category names"],
+  ["guild.category_channels_count", "Number of categories"],
+  ["guild.vanity", "Vanity URL code"],
+
+  ["user", "Username"],
+  ["user.id", "User ID"],
+  ["user.mention", "Mentions the user"],
+  ["user.name", "Username"],
+  ["user.tag", "Discriminator"],
+  ["user.avatar", "Avatar URL"],
+  ["user.guild_avatar", "Server avatar URL"],
+  ["user.display_avatar", "Avatar shown in the server (URL)"],
+  ["user.joined_at", "Joined, UTC date and time"],
+  ["user.joined_at_timestamp", "Joined, unix timestamp"],
+  ["user.created_at", "Account created, UTC date and time"],
+  ["user.created_at_timestamp", "Account created, unix timestamp"],
+  ["user.display_name", "Display name"],
+  ["user.boost", "Yes or No"],
+  ["user.boost_since", "Boosting since, UTC date and time"],
+  ["user.boost_since_timestamp", "Boosting since, unix timestamp"],
+  ["user.color", "Role color, hex"],
+  ["user.top_role", "Highest role name"],
+  ["user.role_list", "All roles as mentions"],
+  ["user.role_text_list", "All role names"],
+  ["user.bot", "Yes or No"],
+  ["user.badges", "Profile badges"],
+  ["user.join_position", "Join number, like 42"],
+  ["user.join_position_suffix", "Join number, like 42nd"],
+
+  ["channel.name", "Channel name"],
+  ["channel.id", "Channel ID"],
+  ["channel.mention", "Mentions the channel"],
+  ["channel.topic", "Channel topic"],
+  ["channel.type", "Channel type"],
+  ["channel.category_id", "Category ID"],
+  ["channel.category_name", "Category name"],
+  ["channel.position", "Channel position"],
+  ["channel.slowmode_delay", "Slowmode in seconds"],
+
+  ["date.now", "PST date and time"],
+  ["date.utc_timestamp", "Current unix timestamp"],
+  ["date.now_proper", "PST, like November 11, 2026 12:00 PM"],
+  ["date.now_short", "PST, like Nov 11, 2026"],
+  ["date.now_shorter", "PST, like 11/11/26"],
+  ["time.now", "PST time, like 12:00 PM"],
+  ["time.now_military", "PST time, 24 hour"],
+  ["date.utc_now", "UTC date and time"],
+  ["date.utc_now_proper", "UTC, like November 11, 2026 12:00 PM"],
+  ["date.utc_now_short", "UTC, like Nov 11, 2026"],
+  ["date.utc_now_shorter", "UTC, like 11/11/26"],
+  ["time.utc_now", "UTC time, like 12:00 PM"],
+  ["time.utc_now_military", "UTC time, 24 hour"],
+];
+
+type VarEl = HTMLInputElement | HTMLTextAreaElement;
+
+/**
+ * Drop-in <input> / <textarea> that suggests {variables}. Type `{` and a few letters (like `{guild`),
+ * then click one or use the arrow keys with Enter or Tab. onChange still gets a normal change event.
+ */
+function VarField({
+  multiline,
+  value,
+  onChange,
+  className,
+  placeholder,
+  maxLength,
+  rows,
+  "aria-label": ariaLabel,
+}: {
+  multiline?: boolean;
+  value: string;
+  onChange: (ev: ChangeEvent<VarEl>) => void;
+  className?: string;
+  placeholder?: string;
+  maxLength?: number;
+  rows?: number;
+  "aria-label"?: string;
+}) {
+  const box = useRef<VarEl | null>(null);
+  const [at, setAt] = useState<{ start: number; query: string } | null>(null);
+  const [sel, setSel] = useState(0);
+
+  const matches = useMemo(() => {
+    if (!at) return [];
+    return VARIABLES.filter(([n]) => n.includes(at.query)).sort(
+      (a, b) => Number(b[0].startsWith(at.query)) - Number(a[0].startsWith(at.query))
+    );
+  }, [at]);
+
+  // is the caret right after an unfinished `{word`?
+  const detect = (el: VarEl) => {
+    const pos = el.selectionStart ?? 0;
+    const m = el.value.slice(0, pos).match(/\{([a-z_.]*)$/);
+    setAt(m ? { start: pos - m[0].length, query: m[1] } : null);
+    setSel(0);
+  };
+
+  const apply = (name: string) => {
+    const el = box.current;
+    if (!el || !at) return;
+    const end = el.selectionStart ?? el.value.length;
+    const after = el.value.slice(end);
+    const text = `{${name}}`;
+    const next = el.value.slice(0, at.start) + text + (after.startsWith("}") ? after.slice(1) : after);
+    const caret = at.start + text.length;
+    // set the value the way a user would so react fires onChange like normal
+    const proto = multiline ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, "value")!.set!.call(el, next);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.setSelectionRange(caret, caret);
+    setAt(null);
+  };
+
+  const shared = {
+    value,
+    className,
+    placeholder,
+    maxLength,
+    "aria-label": ariaLabel,
+    autoComplete: "off",
+    onChange: (ev: ChangeEvent<VarEl>) => {
+      onChange(ev);
+      detect(ev.target);
+    },
+    onClick: (ev: { currentTarget: VarEl }) => detect(ev.currentTarget),
+    onKeyUp: (ev: { key: string; currentTarget: VarEl }) => {
+      if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(ev.key)) detect(ev.currentTarget);
+    },
+    onKeyDown: (ev: { key: string; preventDefault: () => void }) => {
+      if (!at || !matches.length) return;
+      const key = ev.key;
+      if (key === "ArrowDown" || key === "ArrowUp") {
+        ev.preventDefault();
+        setSel((s) => (s + (key === "ArrowDown" ? 1 : -1) + matches.length) % matches.length);
+      } else if (key === "Enter" || key === "Tab") {
+        ev.preventDefault();
+        apply(matches[sel][0]);
+      } else if (key === "Escape") setAt(null);
+    },
+    onBlur: () => setAt(null),
+  };
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      {multiline ? (
+        <textarea {...shared} rows={rows} ref={(el) => { box.current = el; }} />
+      ) : (
+        <input {...shared} ref={(el) => { box.current = el; }} />
+      )}
+      {at && matches.length > 0 && (
+        <ul
+          role="listbox"
+          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-xl border border-white/10 bg-[#171a19] p-1 shadow-xl"
+        >
+          {matches.map(([name, hint], i) => (
+            <li
+              key={name}
+              role="option"
+              aria-selected={i === sel}
+              ref={(el) => { if (el && i === sel) el.scrollIntoView({ block: "nearest" }); }}
+              onMouseDown={(ev) => {
+                ev.preventDefault();
+                apply(name);
+              }}
+              onMouseEnter={() => setSel(i)}
+              className={`flex cursor-pointer items-baseline justify-between gap-3 rounded-lg px-2.5 py-1.5 text-sm ${
+                i === sel ? "bg-white/10 text-fg" : "text-white/70"
+              }`}
+            >
+              <span className="font-mono text-[13px]">{`{${name}}`}</span>
+              <span className="truncate text-xs text-white/40">{hint}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function Panel({ title, count, action, children }: { title?: string; count?: string; action?: ReactNode; children: ReactNode }) {
   return (
@@ -655,7 +869,7 @@ function BtnRow({ b, onChange, onRemove }: { b: Btn; onChange: (p: Partial<Btn>)
   return (
     <div className="space-y-2">
       <div className={`grid items-center gap-2 ${onRemove ? "sm:grid-cols-[1fr_8rem_4.5rem_auto]" : "sm:grid-cols-[1fr_8rem_4.5rem]"}`}>
-        <input className={inputCls} maxLength={80} value={b.label} onChange={(ev) => onChange({ label: ev.target.value })} placeholder="Label" />
+        <VarField className={inputCls} maxLength={80} value={b.label} onChange={(ev) => onChange({ label: ev.target.value })} placeholder="Label" />
         <select className={inputCls} value={b.style} onChange={(ev) => onChange({ style: ev.target.value as BtnStyle })} aria-label="Button style">
           {BTN_STYLES.map((s) => (
             <option key={s.id} value={s.id} className="bg-[#121413]">
@@ -671,7 +885,7 @@ function BtnRow({ b, onChange, onRemove }: { b: Btn; onChange: (p: Partial<Btn>)
         )}
       </div>
       {b.style === "link" && (
-        <input className={inputCls} value={b.url} onChange={(ev) => onChange({ url: ev.target.value })} placeholder="https://..." />
+        <VarField className={inputCls} value={b.url} onChange={(ev) => onChange({ url: ev.target.value })} placeholder="https://..." />
       )}
       <Toggle checked={b.disabled} onChange={(v) => onChange({ disabled: v })}>
         Disabled
@@ -786,7 +1000,7 @@ function ContainerEditor({
               </div>
 
               {c.type === "text" && (
-                <textarea
+                <VarField multiline
                   className={`${inputCls} resize-y`}
                   rows={4}
                   maxLength={CT_LIMITS.text}
@@ -798,7 +1012,7 @@ function ContainerEditor({
 
               {c.type === "section" && (
                 <>
-                  <textarea
+                  <VarField multiline
                     className={`${inputCls} resize-y`}
                     rows={3}
                     maxLength={CT_LIMITS.text}
@@ -823,7 +1037,7 @@ function ContainerEditor({
                     </select>
                   </div>
                   {c.accessory === "thumbnail" ? (
-                    <input
+                    <VarField
                       className={inputCls}
                       value={c.thumb}
                       onChange={(ev) => upd(c.id, { thumb: ev.target.value })}
@@ -850,7 +1064,7 @@ function ContainerEditor({
                 <div className="space-y-2">
                   {c.urls.map((u, ui) => (
                     <div key={ui} className="flex items-center gap-2">
-                      <input
+                      <VarField
                         className={inputCls}
                         value={u}
                         onChange={(ev) => upd(c.id, { urls: c.urls.map((x, xi) => (xi === ui ? ev.target.value : x)) })}
@@ -1070,8 +1284,8 @@ export default function EmbedBuilder() {
           <h1 className="text-3xl font-bold text-fg md:text-4xl">Embed builder</h1>
           <p className="mt-2 max-w-xl text-white/60">
             {mode === "embed"
-              ? "Design an embed with fields and buttons, see it exactly how Discord shows it, then copy the script."
-              : "Build a components v2 container with text, sections, galleries and buttons, then copy the script."}
+              ? "Design an embed with fields and buttons, see it exactly how Discord shows it, then copy the script. Type { in any text box to add variables."
+              : "Build a components v2 container with text, sections, galleries and buttons, then copy the script. Type { in any text box to add variables."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1101,7 +1315,7 @@ export default function EmbedBuilder() {
           <div className="space-y-6">
             <Panel title="Message">
               <Label hint={`${content.length}/2000`}>Content</Label>
-              <textarea
+              <VarField multiline
                 value={content}
                 onChange={(ev) => setContent(ev.target.value)}
                 maxLength={2000}
@@ -1117,11 +1331,11 @@ export default function EmbedBuilder() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <Label>Name</Label>
-                      <input className={inputCls} maxLength={256} value={e.authorName} onChange={(ev) => upd("authorName", ev.target.value)} placeholder="Author" />
+                      <VarField className={inputCls} maxLength={256} value={e.authorName} onChange={(ev) => upd("authorName", ev.target.value)} placeholder="Author" />
                     </div>
                     <div>
                       <Label>Icon URL</Label>
-                      <input className={inputCls} value={e.authorIcon} onChange={(ev) => upd("authorIcon", ev.target.value)} placeholder="https://..." />
+                      <VarField className={inputCls} value={e.authorIcon} onChange={(ev) => upd("authorIcon", ev.target.value)} placeholder="https://..." />
                     </div>
                   </div>
                 </Group>
@@ -1130,16 +1344,16 @@ export default function EmbedBuilder() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <Label hint={`${e.title.length}/256`}>Title</Label>
-                      <input className={inputCls} maxLength={256} value={e.title} onChange={(ev) => upd("title", ev.target.value)} placeholder="Title" />
+                      <VarField className={inputCls} maxLength={256} value={e.title} onChange={(ev) => upd("title", ev.target.value)} placeholder="Title" />
                     </div>
                     <div>
                       <Label>Title URL</Label>
-                      <input className={inputCls} value={e.titleUrl} onChange={(ev) => upd("titleUrl", ev.target.value)} placeholder="https://..." />
+                      <VarField className={inputCls} value={e.titleUrl} onChange={(ev) => upd("titleUrl", ev.target.value)} placeholder="https://..." />
                     </div>
                   </div>
                   <div>
                     <Label hint={`${e.description.length}/4096`}>Description</Label>
-                    <textarea
+                    <VarField multiline
                       className={`${inputCls} resize-y`}
                       rows={5}
                       maxLength={4096}
@@ -1158,11 +1372,11 @@ export default function EmbedBuilder() {
                     </div>
                     <div>
                       <Label>Thumbnail URL</Label>
-                      <input className={inputCls} value={e.thumbnail} onChange={(ev) => upd("thumbnail", ev.target.value)} placeholder="https://..." />
+                      <VarField className={inputCls} value={e.thumbnail} onChange={(ev) => upd("thumbnail", ev.target.value)} placeholder="https://..." />
                     </div>
                     <div>
                       <Label>Image URL</Label>
-                      <input className={inputCls} value={e.image} onChange={(ev) => upd("image", ev.target.value)} placeholder="https://..." />
+                      <VarField className={inputCls} value={e.image} onChange={(ev) => upd("image", ev.target.value)} placeholder="https://..." />
                     </div>
                   </div>
                 </Group>
@@ -1171,11 +1385,11 @@ export default function EmbedBuilder() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <Label hint={`${e.footerText.length}/2048`}>Text</Label>
-                      <input className={inputCls} maxLength={2048} value={e.footerText} onChange={(ev) => upd("footerText", ev.target.value)} placeholder="Footer" />
+                      <VarField className={inputCls} maxLength={2048} value={e.footerText} onChange={(ev) => upd("footerText", ev.target.value)} placeholder="Footer" />
                     </div>
                     <div>
                       <Label>Icon URL</Label>
-                      <input className={inputCls} value={e.footerIcon} onChange={(ev) => upd("footerIcon", ev.target.value)} placeholder="https://..." />
+                      <VarField className={inputCls} value={e.footerIcon} onChange={(ev) => upd("footerIcon", ev.target.value)} placeholder="https://..." />
                     </div>
                   </div>
                   <Toggle checked={e.timestamp} onChange={(v) => upd("timestamp", v)}>
@@ -1205,7 +1419,7 @@ export default function EmbedBuilder() {
                     <div key={f.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
                       <div className="flex items-center gap-2">
                         <span className="w-5 text-xs text-white/30">{i + 1}</span>
-                        <input
+                        <VarField
                           className={inputCls}
                           maxLength={256}
                           value={f.name}
@@ -1216,7 +1430,7 @@ export default function EmbedBuilder() {
                           <Trash2 size={16} />
                         </IconBtn>
                       </div>
-                      <textarea
+                      <VarField multiline
                         className={`${inputCls} resize-y`}
                         rows={2}
                         maxLength={1024}
