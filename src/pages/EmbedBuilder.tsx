@@ -491,14 +491,39 @@ function toContainerScript(ct: ContainerState, comps: Comp[]): string {
 /* ------------------------------------------------------------------ */
 
 const inputCls =
-  "w-full rounded-xl border border-white/[0.07] bg-black/30 px-3.5 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-white/30 focus:border-white/30";
+  "w-full rounded-lg border border-white/[0.08] bg-black/25 px-3 py-2 text-sm text-fg outline-none transition-colors placeholder:text-white/30 focus:border-[#538CE5]/70";
 
-const card =
-  "rounded-[22px] border border-white/[0.07] bg-[#121413]/80 p-5 backdrop-blur-xl";
+const panelCls = "rounded-2xl border border-white/[0.07] bg-[#121413]/80 p-5 backdrop-blur-xl";
+
+function Panel({ title, count, action, children }: { title?: string; count?: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <section className={panelCls}>
+      {(title || action) && (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-fg">
+            {title}
+            {count && <span className="ml-2 font-normal text-white/40">{count}</span>}
+          </h2>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="space-y-3 border-t border-white/[0.06] pt-5 first:border-t-0 first:pt-0">
+      <div className="text-[11px] font-medium uppercase tracking-wider text-white/40">{title}</div>
+      {children}
+    </div>
+  );
+}
 
 function Label({ children, hint }: { children: ReactNode; hint?: string }) {
   return (
-    <div className="mb-1.5 flex items-baseline justify-between text-xs font-medium text-white/60">
+    <div className="mb-1.5 flex items-baseline justify-between text-xs text-white/50">
       <span>{children}</span>
       {hint && <span className="text-white/30">{hint}</span>}
     </div>
@@ -509,9 +534,102 @@ function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (
   return (
     <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-white/70">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
-      <span className="relative h-5 w-9 rounded-full bg-white/10 transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-[#5865f2] peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-white/40" />
+      <span className="relative h-5 w-9 rounded-full bg-white/10 transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-[#538CE5] peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-white/40" />
       {children}
     </label>
+  );
+}
+
+function IconBtn({
+  label,
+  onClick,
+  disabled,
+  danger,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`shrink-0 rounded-lg p-1.5 text-white/40 transition-colors hover:bg-white/5 disabled:opacity-30 ${
+        danger ? "hover:text-red-400" : "hover:text-fg"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function AddBtn({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-accent-soft disabled:opacity-40"
+    >
+      <Plus size={15} /> {children}
+    </button>
+  );
+}
+
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { id: T; label: string }[];
+  label: string;
+}) {
+  return (
+    <div role="tablist" aria-label={label} className="flex gap-0.5 rounded-lg bg-black/30 p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          role="tab"
+          aria-selected={value === o.id}
+          onClick={() => onChange(o.id)}
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            value === o.id ? "bg-white/10 text-fg" : "text-white/50 hover:text-fg"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ColorField({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="color"
+        value={value}
+        onChange={(ev) => onChange(ev.target.value)}
+        aria-label={label}
+        className="h-9 w-10 cursor-pointer rounded-lg border border-white/[0.08] bg-black/25 p-1"
+      />
+      <input
+        className={`${inputCls} w-24 font-mono`}
+        value={value}
+        maxLength={7}
+        onChange={(ev) => onChange(ev.target.value)}
+        aria-label={`${label} hex`}
+      />
+    </div>
   );
 }
 
@@ -536,7 +654,7 @@ function PreviewBtn({ b }: { b: Btn }) {
 function BtnRow({ b, onChange, onRemove }: { b: Btn; onChange: (p: Partial<Btn>) => void; onRemove?: () => void }) {
   return (
     <div className="space-y-2">
-      <div className={`grid gap-2 ${onRemove ? "sm:grid-cols-[1fr_1fr_5rem_auto]" : "sm:grid-cols-[1fr_1fr_5rem]"}`}>
+      <div className={`grid items-center gap-2 ${onRemove ? "sm:grid-cols-[1fr_8rem_4.5rem_auto]" : "sm:grid-cols-[1fr_8rem_4.5rem]"}`}>
         <input className={inputCls} maxLength={80} value={b.label} onChange={(ev) => onChange({ label: ev.target.value })} placeholder="Label" />
         <select className={inputCls} value={b.style} onChange={(ev) => onChange({ style: ev.target.value as BtnStyle })} aria-label="Button style">
           {BTN_STYLES.map((s) => (
@@ -547,9 +665,9 @@ function BtnRow({ b, onChange, onRemove }: { b: Btn; onChange: (p: Partial<Btn>)
         </select>
         <input className={inputCls} value={b.emoji} onChange={(ev) => onChange({ emoji: ev.target.value })} placeholder="Emoji" aria-label="Emoji" />
         {onRemove && (
-          <button onClick={onRemove} aria-label="Remove button" className="rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400">
+          <IconBtn label="Remove button" onClick={onRemove} danger>
             <Trash2 size={16} />
-          </button>
+          </IconBtn>
         )}
       </div>
       {b.style === "link" && (
@@ -622,217 +740,167 @@ function ContainerEditor({
 
   return (
     <div className="space-y-6">
-      <section className={`${card} space-y-4`}>
-        <h2 className="font-semibold text-fg">Container</h2>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <Toggle checked={ct.accent} onChange={(v) => setCt((p) => ({ ...p, accent: v }))}>
-            Accent color
-          </Toggle>
-          <Toggle checked={ct.spoiler} onChange={(v) => setCt((p) => ({ ...p, spoiler: v }))}>
-            Spoiler
-          </Toggle>
-        </div>
-        {ct.accent && (
-          <div>
-            <Label>Color</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={ct.color}
-                onChange={(ev) => setCt((p) => ({ ...p, color: ev.target.value }))}
-                aria-label="Accent color"
-                className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.07] bg-black/30 p-1"
-              />
-              <input
-                className={`${inputCls} w-28 font-mono`}
-                value={ct.color}
-                maxLength={7}
-                onChange={(ev) => setCt((p) => ({ ...p, color: ev.target.value }))}
-              />
+      <Panel title="Container">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Toggle checked={ct.accent} onChange={(v) => setCt((p) => ({ ...p, accent: v }))}>
+              Accent color
+            </Toggle>
+            <Toggle checked={ct.spoiler} onChange={(v) => setCt((p) => ({ ...p, spoiler: v }))}>
+              Spoiler
+            </Toggle>
+          </div>
+          {ct.accent && (
+            <div>
+              <Label>Color</Label>
+              <ColorField value={ct.color} onChange={(v) => setCt((p) => ({ ...p, color: v }))} label="Accent color" />
             </div>
-          </div>
-        )}
-        <p className="text-xs text-white/40">
-          Container messages can't have message content or embeds. Text across all components: {textLen}/{CT_LIMITS.text}
-        </p>
-      </section>
-
-      <section className={`${card} space-y-3`}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold text-fg">
-            Components{" "}
-            <span className="text-sm font-normal text-white/40">
-              {comps.length}/{CT_LIMITS.components}
-            </span>
-          </h2>
-          <div className="flex flex-wrap gap-1.5">
-            {(Object.keys(COMP_META) as Comp["type"][]).map((t) => (
-              <button
-                key={t}
-                disabled={comps.length >= CT_LIMITS.components}
-                onClick={() => setComps((cs) => [...cs, make(t)])}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] px-2.5 py-1.5 text-xs font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
-              >
-                <Plus size={14} /> {COMP_META[t].label}
-              </button>
-            ))}
-          </div>
+          )}
+          <p className="text-xs text-white/40">
+            Container messages can't have message content or embeds. Text across all components: {textLen}/{CT_LIMITS.text}
+          </p>
         </div>
+      </Panel>
 
+      <Panel title="Components" count={`${comps.length}/${CT_LIMITS.components}`}>
         {comps.length === 0 && <p className="text-sm text-white/40">Nothing in the container yet.</p>}
 
-        {comps.map((c, i) => (
-          <div key={c.id} className="space-y-3 rounded-xl border border-white/[0.07] bg-black/20 p-3">
-            <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 text-sm font-medium text-white/70">
-                {COMP_META[c.type].icon} {COMP_META[c.type].label}
-              </span>
-              <div className="flex items-center">
-                <button
-                  onClick={() => move(i, -1)}
-                  disabled={i === 0}
-                  aria-label="Move up"
-                  className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/5 hover:text-fg disabled:opacity-30"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                <button
-                  onClick={() => move(i, 1)}
-                  disabled={i === comps.length - 1}
-                  aria-label="Move down"
-                  className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/5 hover:text-fg disabled:opacity-30"
-                >
-                  <ChevronDown size={16} />
-                </button>
-                <button
-                  onClick={() => del(c.id)}
-                  aria-label="Remove component"
-                  className="rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
-                >
-                  <Trash2 size={16} />
-                </button>
+        <div className="space-y-3">
+          {comps.map((c, i) => (
+            <div key={c.id} className="space-y-3 rounded-xl bg-black/20 p-3">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-white/70">
+                  {COMP_META[c.type].icon} {COMP_META[c.type].label}
+                </span>
+                <div className="flex items-center">
+                  <IconBtn label="Move up" onClick={() => move(i, -1)} disabled={i === 0}>
+                    <ChevronUp size={16} />
+                  </IconBtn>
+                  <IconBtn label="Move down" onClick={() => move(i, 1)} disabled={i === comps.length - 1}>
+                    <ChevronDown size={16} />
+                  </IconBtn>
+                  <IconBtn label="Remove component" onClick={() => del(c.id)} danger>
+                    <Trash2 size={16} />
+                  </IconBtn>
+                </div>
               </div>
-            </div>
 
-            {c.type === "text" && (
-              <textarea
-                className={`${inputCls} resize-y`}
-                rows={4}
-                maxLength={CT_LIMITS.text}
-                value={c.content}
-                onChange={(ev) => upd(c.id, { content: ev.target.value })}
-                placeholder="Supports # headers, **bold**, *italic*, __underline__, ~~strike~~, `code` and [links](https://...)"
-              />
-            )}
-
-            {c.type === "section" && (
-              <>
+              {c.type === "text" && (
                 <textarea
                   className={`${inputCls} resize-y`}
-                  rows={3}
+                  rows={4}
                   maxLength={CT_LIMITS.text}
                   value={c.content}
                   onChange={(ev) => upd(c.id, { content: ev.target.value })}
-                  placeholder="Section text"
+                  placeholder="Supports # headers, **bold**, *italic*, __underline__, ~~strike~~, `code` and [links](https://...)"
                 />
-                <div>
-                  <Label>Accessory</Label>
-                  <select
-                    className={inputCls}
-                    value={c.accessory}
-                    onChange={(ev) => upd(c.id, { accessory: ev.target.value as "thumbnail" | "button" })}
-                    aria-label="Accessory type"
-                  >
-                    <option value="thumbnail" className="bg-[#121413]">
-                      Thumbnail
-                    </option>
-                    <option value="button" className="bg-[#121413]">
-                      Button
-                    </option>
-                  </select>
-                </div>
-                {c.accessory === "thumbnail" ? (
-                  <input
-                    className={inputCls}
-                    value={c.thumb}
-                    onChange={(ev) => upd(c.id, { thumb: ev.target.value })}
-                    placeholder="Thumbnail URL https://..."
+              )}
+
+              {c.type === "section" && (
+                <>
+                  <textarea
+                    className={`${inputCls} resize-y`}
+                    rows={3}
+                    maxLength={CT_LIMITS.text}
+                    value={c.content}
+                    onChange={(ev) => upd(c.id, { content: ev.target.value })}
+                    placeholder="Section text"
                   />
-                ) : (
-                  <BtnRow b={c.btn} onChange={(p) => upd(c.id, { btn: { ...c.btn, ...p } })} />
-                )}
-              </>
-            )}
-
-            {c.type === "separator" && (
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                <Toggle checked={c.divider} onChange={(v) => upd(c.id, { divider: v })}>
-                  Show divider line
-                </Toggle>
-                <Toggle checked={c.large} onChange={(v) => upd(c.id, { large: v })}>
-                  Large spacing
-                </Toggle>
-              </div>
-            )}
-
-            {c.type === "gallery" && (
-              <div className="space-y-2">
-                {c.urls.map((u, ui) => (
-                  <div key={ui} className="flex items-center gap-2">
+                  <div>
+                    <Label>Accessory</Label>
+                    <select
+                      className={inputCls}
+                      value={c.accessory}
+                      onChange={(ev) => upd(c.id, { accessory: ev.target.value as "thumbnail" | "button" })}
+                      aria-label="Accessory type"
+                    >
+                      <option value="thumbnail" className="bg-[#121413]">
+                        Thumbnail
+                      </option>
+                      <option value="button" className="bg-[#121413]">
+                        Button
+                      </option>
+                    </select>
+                  </div>
+                  {c.accessory === "thumbnail" ? (
                     <input
                       className={inputCls}
-                      value={u}
-                      onChange={(ev) => upd(c.id, { urls: c.urls.map((x, xi) => (xi === ui ? ev.target.value : x)) })}
-                      placeholder="Image URL https://..."
+                      value={c.thumb}
+                      onChange={(ev) => upd(c.id, { thumb: ev.target.value })}
+                      placeholder="Thumbnail URL https://..."
                     />
-                    <button
-                      onClick={() => upd(c.id, { urls: c.urls.filter((_, xi) => xi !== ui) })}
-                      aria-label={`Remove image ${ui + 1}`}
-                      className="shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  disabled={c.urls.length >= CT_LIMITS.gallery}
-                  onClick={() => upd(c.id, { urls: [...c.urls, ""] })}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
-                >
-                  <Plus size={16} /> Add image{" "}
-                  <span className="text-white/40">
-                    {c.urls.length}/{CT_LIMITS.gallery}
-                  </span>
-                </button>
-              </div>
-            )}
+                  ) : (
+                    <BtnRow b={c.btn} onChange={(p) => upd(c.id, { btn: { ...c.btn, ...p } })} />
+                  )}
+                </>
+              )}
 
-            {c.type === "buttons" && (
-              <div className="space-y-3">
-                {c.btns.map((b) => (
-                  <div key={b.id} className="rounded-xl border border-white/[0.07] bg-black/20 p-3">
-                    <BtnRow
-                      b={b}
-                      onChange={(p) => upd(c.id, { btns: c.btns.map((x) => (x.id === b.id ? { ...x, ...p } : x)) })}
-                      onRemove={() => upd(c.id, { btns: c.btns.filter((x) => x.id !== b.id) })}
-                    />
+              {c.type === "separator" && (
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <Toggle checked={c.divider} onChange={(v) => upd(c.id, { divider: v })}>
+                    Show divider line
+                  </Toggle>
+                  <Toggle checked={c.large} onChange={(v) => upd(c.id, { large: v })}>
+                    Large spacing
+                  </Toggle>
+                </div>
+              )}
+
+              {c.type === "gallery" && (
+                <div className="space-y-2">
+                  {c.urls.map((u, ui) => (
+                    <div key={ui} className="flex items-center gap-2">
+                      <input
+                        className={inputCls}
+                        value={u}
+                        onChange={(ev) => upd(c.id, { urls: c.urls.map((x, xi) => (xi === ui ? ev.target.value : x)) })}
+                        placeholder="Image URL https://..."
+                      />
+                      <IconBtn
+                        label={`Remove image ${ui + 1}`}
+                        onClick={() => upd(c.id, { urls: c.urls.filter((_, xi) => xi !== ui) })}
+                        danger
+                      >
+                        <Trash2 size={16} />
+                      </IconBtn>
+                    </div>
+                  ))}
+                  <AddBtn disabled={c.urls.length >= CT_LIMITS.gallery} onClick={() => upd(c.id, { urls: [...c.urls, ""] })}>
+                    Add image <span className="text-white/40">{c.urls.length}/{CT_LIMITS.gallery}</span>
+                  </AddBtn>
+                </div>
+              )}
+
+              {c.type === "buttons" && (
+                <div className="space-y-2">
+                  <div className="divide-y divide-white/[0.06]">
+                    {c.btns.map((b) => (
+                      <div key={b.id} className="py-3 first:pt-0 last:pb-0">
+                        <BtnRow
+                          b={b}
+                          onChange={(p) => upd(c.id, { btns: c.btns.map((x) => (x.id === b.id ? { ...x, ...p } : x)) })}
+                          onRemove={() => upd(c.id, { btns: c.btns.filter((x) => x.id !== b.id) })}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-                <button
-                  disabled={c.btns.length >= CT_LIMITS.buttons}
-                  onClick={() => upd(c.id, { btns: [...c.btns, newBtn(newId())] })}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
-                >
-                  <Plus size={16} /> Add button{" "}
-                  <span className="text-white/40">
-                    {c.btns.length}/{CT_LIMITS.buttons}
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </section>
+                  <AddBtn disabled={c.btns.length >= CT_LIMITS.buttons} onClick={() => upd(c.id, { btns: [...c.btns, newBtn(newId())] })}>
+                    Add button <span className="text-white/40">{c.btns.length}/{CT_LIMITS.buttons}</span>
+                  </AddBtn>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-1 border-t border-white/[0.06] pt-4">
+          {(Object.keys(COMP_META) as Comp["type"][]).map((t) => (
+            <AddBtn key={t} disabled={comps.length >= CT_LIMITS.components} onClick={() => setComps((cs) => [...cs, make(t)])}>
+              {COMP_META[t].label}
+            </AddBtn>
+          ))}
+        </div>
+      </Panel>
     </div>
   );
 }
@@ -997,7 +1065,7 @@ export default function EmbedBuilder() {
 
   return (
     <main className="mx-auto max-w-[1200px] px-4 pb-24 pt-28">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-fg md:text-4xl">Embed builder</h1>
           <p className="mt-2 max-w-xl text-white/60">
@@ -1006,27 +1074,24 @@ export default function EmbedBuilder() {
               : "Build a components v2 container with text, sections, galleries and buttons, then copy the script."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div role="tablist" aria-label="Message type" className="flex gap-1 rounded-xl bg-black/30 p-1">
-            {(["embed", "container"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                role="tab"
-                aria-selected={mode === m}
-                onClick={() => setMode(m)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                  mode === m ? "bg-white/10 text-fg" : "text-white/50 hover:text-fg"
-                }`}
-              >
-                {m === "embed" ? "Embed" : "Container (v2)"}
-              </button>
-            ))}
-          </div>
-          <button onClick={reset} className="inline-flex items-center gap-2 rounded-xl border border-white/[0.07] bg-[#121413]/80 px-4 py-2 text-sm font-medium text-fg transition-colors hover:text-accent-soft">
+        <div className="flex flex-wrap items-center gap-2">
+          <Segmented
+            label="Message type"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { id: "embed", label: "Embed" },
+              { id: "container", label: "Container (v2)" },
+            ]}
+          />
+          <button
+            onClick={reset}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-fg"
+          >
             <RotateCcw size={15} /> Clear all
           </button>
         </div>
-      </div>
+      </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* ----------------------------- editor ----------------------------- */}
@@ -1034,8 +1099,8 @@ export default function EmbedBuilder() {
           <ContainerEditor ct={ct} setCt={setCt} comps={comps} setComps={setComps} newId={id} />
         ) : (
           <div className="space-y-6">
-            <section className={card}>
-              <Label hint={`${content.length}/2000`}>Message content</Label>
+            <Panel title="Message">
+              <Label hint={`${content.length}/2000`}>Content</Label>
               <textarea
                 value={content}
                 onChange={(ev) => setContent(ev.target.value)}
@@ -1044,173 +1109,162 @@ export default function EmbedBuilder() {
                 placeholder="Text above the embed (optional)"
                 className={`${inputCls} resize-y`}
               />
-            </section>
+            </Panel>
 
-            <section className={`${card} space-y-4`}>
-              <h2 className="font-semibold text-fg">Embed</h2>
+            <Panel title="Embed">
+              <div className="space-y-5">
+                <Group title="Author">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Name</Label>
+                      <input className={inputCls} maxLength={256} value={e.authorName} onChange={(ev) => upd("authorName", ev.target.value)} placeholder="Author" />
+                    </div>
+                    <div>
+                      <Label>Icon URL</Label>
+                      <input className={inputCls} value={e.authorIcon} onChange={(ev) => upd("authorIcon", ev.target.value)} placeholder="https://..." />
+                    </div>
+                  </div>
+                </Group>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>Author name</Label>
-                  <input className={inputCls} maxLength={256} value={e.authorName} onChange={(ev) => upd("authorName", ev.target.value)} placeholder="Author" />
-                </div>
-                <div>
-                  <Label>Author icon URL</Label>
-                  <input className={inputCls} value={e.authorIcon} onChange={(ev) => upd("authorIcon", ev.target.value)} placeholder="https://..." />
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label hint={`${e.title.length}/256`}>Title</Label>
-                  <input className={inputCls} maxLength={256} value={e.title} onChange={(ev) => upd("title", ev.target.value)} placeholder="Title" />
-                </div>
-                <div>
-                  <Label>Title URL</Label>
-                  <input className={inputCls} value={e.titleUrl} onChange={(ev) => upd("titleUrl", ev.target.value)} placeholder="https://..." />
-                </div>
-              </div>
-
-              <div>
-                <Label hint={`${e.description.length}/4096`}>Description</Label>
-                <textarea
-                  className={`${inputCls} resize-y`}
-                  rows={5}
-                  maxLength={4096}
-                  value={e.description}
-                  onChange={(ev) => upd("description", ev.target.value)}
-                  placeholder="Supports **bold**, *italic*, __underline__, ~~strike~~, `code` and [links](https://...)"
-                />
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-[auto_1fr_1fr]">
-                <div>
-                  <Label>Color</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={e.color}
-                      onChange={(ev) => upd("color", ev.target.value)}
-                      aria-label="Embed color"
-                      className="h-[42px] w-12 cursor-pointer rounded-xl border border-white/[0.07] bg-black/30 p-1"
-                    />
-                    <input
-                      className={`${inputCls} w-28 font-mono`}
-                      value={e.color}
-                      maxLength={7}
-                      onChange={(ev) => upd("color", ev.target.value)}
+                <Group title="Content">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label hint={`${e.title.length}/256`}>Title</Label>
+                      <input className={inputCls} maxLength={256} value={e.title} onChange={(ev) => upd("title", ev.target.value)} placeholder="Title" />
+                    </div>
+                    <div>
+                      <Label>Title URL</Label>
+                      <input className={inputCls} value={e.titleUrl} onChange={(ev) => upd("titleUrl", ev.target.value)} placeholder="https://..." />
+                    </div>
+                  </div>
+                  <div>
+                    <Label hint={`${e.description.length}/4096`}>Description</Label>
+                    <textarea
+                      className={`${inputCls} resize-y`}
+                      rows={5}
+                      maxLength={4096}
+                      value={e.description}
+                      onChange={(ev) => upd("description", ev.target.value)}
+                      placeholder="Supports **bold**, *italic*, __underline__, ~~strike~~, `code` and [links](https://...)"
                     />
                   </div>
-                </div>
-                <div>
-                  <Label>Thumbnail URL</Label>
-                  <input className={inputCls} value={e.thumbnail} onChange={(ev) => upd("thumbnail", ev.target.value)} placeholder="https://..." />
-                </div>
-                <div>
-                  <Label>Image URL</Label>
-                  <input className={inputCls} value={e.image} onChange={(ev) => upd("image", ev.target.value)} placeholder="https://..." />
-                </div>
+                </Group>
+
+                <Group title="Color and media">
+                  <div className="grid gap-3 sm:grid-cols-[auto_1fr_1fr]">
+                    <div>
+                      <Label>Color</Label>
+                      <ColorField value={e.color} onChange={(v) => upd("color", v)} label="Embed color" />
+                    </div>
+                    <div>
+                      <Label>Thumbnail URL</Label>
+                      <input className={inputCls} value={e.thumbnail} onChange={(ev) => upd("thumbnail", ev.target.value)} placeholder="https://..." />
+                    </div>
+                    <div>
+                      <Label>Image URL</Label>
+                      <input className={inputCls} value={e.image} onChange={(ev) => upd("image", ev.target.value)} placeholder="https://..." />
+                    </div>
+                  </div>
+                </Group>
+
+                <Group title="Footer">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label hint={`${e.footerText.length}/2048`}>Text</Label>
+                      <input className={inputCls} maxLength={2048} value={e.footerText} onChange={(ev) => upd("footerText", ev.target.value)} placeholder="Footer" />
+                    </div>
+                    <div>
+                      <Label>Icon URL</Label>
+                      <input className={inputCls} value={e.footerIcon} onChange={(ev) => upd("footerIcon", ev.target.value)} placeholder="https://..." />
+                    </div>
+                  </div>
+                  <Toggle checked={e.timestamp} onChange={(v) => upd("timestamp", v)}>
+                    Show timestamp
+                  </Toggle>
+                </Group>
               </div>
+            </Panel>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label hint={`${e.footerText.length}/2048`}>Footer text</Label>
-                  <input className={inputCls} maxLength={2048} value={e.footerText} onChange={(ev) => upd("footerText", ev.target.value)} placeholder="Footer" />
-                </div>
-                <div>
-                  <Label>Footer icon URL</Label>
-                  <input className={inputCls} value={e.footerIcon} onChange={(ev) => upd("footerIcon", ev.target.value)} placeholder="https://..." />
-                </div>
-              </div>
-
-              <Toggle checked={e.timestamp} onChange={(v) => upd("timestamp", v)}>
-                Show timestamp
-              </Toggle>
-            </section>
-
-            {/* fields */}
-            <section className={`${card} space-y-3`}>
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-fg">
-                  Fields <span className="text-sm font-normal text-white/40">{fields.length}/{LIMITS.fields}</span>
-                </h2>
-                <button
+            <Panel
+              title="Fields"
+              count={`${fields.length}/${LIMITS.fields}`}
+              action={
+                <AddBtn
                   disabled={fields.length >= LIMITS.fields}
                   onClick={() => setFields((fs) => [...fs, { id: id(), name: "", value: "", inline: true }])}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
                 >
-                  <Plus size={16} /> Add field
-                </button>
-              </div>
-              {fields.length === 0 && <p className="text-sm text-white/40">No fields yet.</p>}
-              {fields.map((f, i) => (
-                <div key={f.id} className="space-y-2 rounded-xl border border-white/[0.07] bg-black/20 p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 text-xs text-white/30">{i + 1}</span>
-                    <input
-                      className={inputCls}
-                      maxLength={256}
-                      value={f.name}
-                      onChange={(ev) => updField(f.id, { name: ev.target.value })}
-                      placeholder="Field name"
-                    />
-                    <button
-                      onClick={() => setFields((fs) => fs.filter((x) => x.id !== f.id))}
-                      aria-label={`Remove field ${i + 1}`}
-                      className="shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/5 hover:text-red-400"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  <textarea
-                    className={`${inputCls} resize-y`}
-                    rows={2}
-                    maxLength={1024}
-                    value={f.value}
-                    onChange={(ev) => updField(f.id, { value: ev.target.value })}
-                    placeholder="Field value"
-                  />
-                  <Toggle checked={f.inline} onChange={(v) => updField(f.id, { inline: v })}>
-                    Inline
-                  </Toggle>
+                  Add field
+                </AddBtn>
+              }
+            >
+              {fields.length === 0 ? (
+                <p className="text-sm text-white/40">No fields yet.</p>
+              ) : (
+                <div className="divide-y divide-white/[0.06]">
+                  {fields.map((f, i) => (
+                    <div key={f.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 text-xs text-white/30">{i + 1}</span>
+                        <input
+                          className={inputCls}
+                          maxLength={256}
+                          value={f.name}
+                          onChange={(ev) => updField(f.id, { name: ev.target.value })}
+                          placeholder="Field name"
+                        />
+                        <IconBtn label={`Remove field ${i + 1}`} onClick={() => setFields((fs) => fs.filter((x) => x.id !== f.id))} danger>
+                          <Trash2 size={16} />
+                        </IconBtn>
+                      </div>
+                      <textarea
+                        className={`${inputCls} resize-y`}
+                        rows={2}
+                        maxLength={1024}
+                        value={f.value}
+                        onChange={(ev) => updField(f.id, { value: ev.target.value })}
+                        placeholder="Field value"
+                      />
+                      <Toggle checked={f.inline} onChange={(v) => updField(f.id, { inline: v })}>
+                        Inline
+                      </Toggle>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </section>
+              )}
+            </Panel>
 
-            {/* buttons */}
-            <section className={`${card} space-y-3`}>
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-fg">
-                  Buttons <span className="text-sm font-normal text-white/40">{btns.length}/{LIMITS.buttons}</span>
-                </h2>
-                <button
-                  disabled={btns.length >= LIMITS.buttons}
-                  onClick={() => setBtns((bs) => [...bs, newBtn(id())])}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-fg transition-colors hover:text-accent-soft disabled:opacity-40"
-                >
-                  <Plus size={16} /> Add button
-                </button>
-              </div>
-              {btns.length === 0 && <p className="text-sm text-white/40">No buttons yet.</p>}
-              {btns.map((b, i) => (
-                <div key={b.id} className="rounded-xl border border-white/[0.07] bg-black/20 p-3">
-                  <BtnRow
-                    b={b}
-                    onChange={(patch) => updBtn(b.id, patch)}
-                    onRemove={() => setBtns((bs) => bs.filter((x) => x.id !== b.id))}
-                  />
-                  <span className="sr-only">Button {i + 1}</span>
+            <Panel
+              title="Buttons"
+              count={`${btns.length}/${LIMITS.buttons}`}
+              action={
+                <AddBtn disabled={btns.length >= LIMITS.buttons} onClick={() => setBtns((bs) => [...bs, newBtn(id())])}>
+                  Add button
+                </AddBtn>
+              }
+            >
+              {btns.length === 0 ? (
+                <p className="text-sm text-white/40">No buttons yet.</p>
+              ) : (
+                <div className="divide-y divide-white/[0.06]">
+                  {btns.map((b, i) => (
+                    <div key={b.id} className="py-3 first:pt-0 last:pb-0">
+                      <BtnRow
+                        b={b}
+                        onChange={(patch) => updBtn(b.id, patch)}
+                        onRemove={() => setBtns((bs) => bs.filter((x) => x.id !== b.id))}
+                      />
+                      <span className="sr-only">Button {i + 1}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </section>
+              )}
+            </Panel>
           </div>
         )}
 
         {/* ----------------------------- preview ----------------------------- */}
         <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-          <section className={card}>
-            <h2 className="mb-3 font-semibold text-fg">Preview</h2>
-
+          <Panel title="Preview">
             {/* discord message */}
             <div className="overflow-hidden rounded-xl bg-[#313338] p-4 font-[gg_sans,'Noto_Sans','Helvetica_Neue',Helvetica,Arial,sans-serif] text-[#dbdee1]">
               <div className="flex gap-4">
@@ -1327,27 +1381,22 @@ export default function EmbedBuilder() {
                 </div>
               </div>
             </div>
-          </section>
+          </Panel>
 
           {/* script box */}
-          <section className={card}>
+          <Panel>
             <div className="mb-3 flex items-center justify-between gap-3">
-              <div role="tablist" aria-label="Output format" className="flex gap-1 rounded-xl bg-black/30 p-1">
-                {(["script", "json", "python"] as Tab[]).map((t) => (
-                  <button
-                    key={t}
-                    role="tab"
-                    aria-selected={tab === t}
-                    onClick={() => setTab(t)}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                      tab === t ? "bg-white/10 text-fg" : "text-white/50 hover:text-fg"
-                    }`}
-                  >
-                    {t === "script" ? "Script" : t === "json" ? "JSON" : "discord.py"}
-                  </button>
-                ))}
-              </div>
-              <button onClick={copy} className="btn btn-accent inline-flex items-center gap-2 !py-2">
+              <Segmented
+                label="Output format"
+                value={tab}
+                onChange={setTab}
+                options={[
+                  { id: "script", label: "Script" },
+                  { id: "json", label: "JSON" },
+                  { id: "python", label: "discord.py" },
+                ]}
+              />
+              <button onClick={copy} className="btn btn-accent inline-flex items-center gap-2 !px-4 !py-1.5 !text-sm">
                 {copied ? <Check size={16} /> : <Copy size={16} />}
                 {copied ? "Copied" : "Copy"}
               </button>
@@ -1355,7 +1404,7 @@ export default function EmbedBuilder() {
             <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-all rounded-xl border border-white/[0.07] bg-black/40 p-4 font-mono text-[13px] leading-relaxed text-white/80">
               {output}
             </pre>
-          </section>
+          </Panel>
         </div>
       </div>
     </main>
