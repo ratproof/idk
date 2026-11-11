@@ -80,7 +80,7 @@ const EMPTY_EMBED: EmbedState = {
   title: "",
   titleUrl: "",
   description: "",
-  color: "#0B1933",
+  color: "#538CE5",
   thumbnail: "",
   image: "",
   footerText: "",
@@ -107,7 +107,7 @@ const newBtn = (id: number, over: Partial<Btn> = {}): Btn => ({
   ...over,
 });
 
-const EMPTY_CT: ContainerState = { accent: true, color: "#0B1933", spoiler: false };
+const EMPTY_CT: ContainerState = { accent: true, color: "#538CE5", spoiler: false };
 
 const exampleComps = (): Comp[] => [
   {
