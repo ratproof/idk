@@ -65,7 +65,7 @@ export default function Hero() {
   const showAvatar = status.isLoading || !!avatar;
 
   return (
-    <section className="relative flex min-h-[88svh] items-center px-4 pb-16 pt-28">
+    <section className="relative flex min-h-[100svh] items-center px-4 py-24">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-10 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
         <div className="fade-in max-w-2xl">
           <h1>
