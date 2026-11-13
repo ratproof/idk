@@ -81,7 +81,7 @@ export default function ServersMarquee({ speed = 60 }: { speed?: number }) {
   if (!servers.length) return null;
 
   return (
-    <section className="relative py-12">
+    <section className="relative pt-32 pb-12">
       <h2 className="mb-6 text-center text-lg font-medium text-white/70">Trusted by some of Discord's biggest servers</h2>
       <LogoLoop
         logos={logos}
