@@ -4,7 +4,7 @@ import { BOT_NAME, INVITE_URL } from "@/config";
 import { useStatus } from "@/hooks/useStatus";
 import { G } from "@/components/ui/SectionHead";
 
-function useCountUp(target: number | undefined, duration = 1600) {
+function useCountUp(target: number | undefined, duration = 2800) {
   const [value, setValue] = useState(0);
   const from = useRef(0);
 
@@ -20,7 +20,8 @@ function useCountUp(target: number | undefined, duration = 1600) {
     let raf = 0;
     const tick = (now: number) => {
       const p = Math.min((now - t0) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
+      // easeOutQuint: fast start, long slow tail at the end
+      const eased = 1 - Math.pow(1 - p, 5);
       const v = Math.round(start + (target - start) * eased);
       from.current = v;
       setValue(v);
