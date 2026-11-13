@@ -5,7 +5,9 @@ export type Usage = {
   average: number;
 };
 
-const RANGES = [3, 7, 14, 30];
+type Range = number | "all";
+
+const RANGES: Range[] = [3, 7, 14, 30, "all"];
 const ACCENT = "#538CE5";
 const MUTED = "#8b8b94";
 const TEXT = "#f4f4f5";
@@ -65,7 +67,7 @@ const CSS = `
 export default function UsageGraph({ usage }: { usage?: Usage }) {
   const all = usage?.days ?? [];
   const has = all.length > 0;
-  const [range, setRange] = useState(7);
+  const [range, setRange] = useState<Range>(7);
   const [hover, setHover] = useState<number | null>(null);
   const [width, setWidth] = useState(600);
   const box = useRef<HTMLDivElement>(null);
@@ -87,15 +89,20 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
     );
   }
 
-  const days = all.slice(-range);
+  const isAll = range === "all";
+  const days = isAll ? all : all.slice(-range);
   const n = days.length;
   const active = Math.min(hover ?? n - 1, n - 1);
   const total = days.reduce((a, d) => a + d.uses, 0);
   const average = Math.round((total / n) * 10) / 10;
   const peak = days.reduce((b, d) => (d.uses > b.uses ? d : b), days[0]);
 
-  const prev = all.length >= n * 2 ? all.slice(-n * 2, -n).reduce((a, d) => a + d.uses, 0) : 0;
+  // no previous period to compare against on all time, so the pill hides itself
+  const prev = !isAll && all.length >= n * 2 ? all.slice(-n * 2, -n).reduce((a, d) => a + d.uses, 0) : 0;
   const delta = prev > 0 ? ((total - prev) / prev) * 100 : null;
+
+  // long spans get years on the labels and tooltip
+  const longSpan = n > 300;
 
   // geometry
   const h = width < 420 ? 210 : 270;
@@ -114,9 +121,13 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
   const base = y(0);
   const [ax, ay] = pts[active];
 
-  const maxLabels = Math.max(2, Math.floor(plotW / 64));
+  const maxLabels = Math.max(2, Math.floor(plotW / (longSpan ? 72 : 64)));
   const every = Math.ceil(n / maxLabels);
-  const labelOpts: Intl.DateTimeFormatOptions = n <= 7 ? { weekday: "short" } : { month: "short", day: "numeric" };
+  const labelOpts: Intl.DateTimeFormatOptions = longSpan
+    ? { month: "short", year: "2-digit" }
+    : n <= 7
+      ? { weekday: "short" }
+      : { month: "short", day: "numeric" };
 
   const tipLeft = Math.min(Math.max(ax, 72), width - 72);
   const tipBelow = ay < 72;
@@ -162,7 +173,8 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
             )}
           </div>
           <span style={{ color: MUTED, fontSize: ".82rem", display: "block", marginTop: 4 }}>
-            {nf(total)} commands in {n} day{n === 1 ? "" : "s"} · peak {nf(peak.uses)} on {fmtDay(peak.date, { month: "short", day: "numeric" })}
+            {nf(total)} commands {isAll ? `all time (${nf(n)} day${n === 1 ? "" : "s"})` : `in ${n} day${n === 1 ? "" : "s"}`} · peak {nf(peak.uses)} on{" "}
+            {fmtDay(peak.date, { month: "short", day: "numeric", ...(longSpan ? { year: "numeric" } : {}) })}
           </span>
         </div>
 
@@ -177,7 +189,7 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
               type="button"
               className="ug-btn"
               aria-pressed={r === range}
-              aria-label={`Last ${r} days`}
+              aria-label={r === "all" ? "All time" : `Last ${r} days`}
               onClick={() => { setRange(r); setHover(null); }}
               style={{
                 border: 0, cursor: "pointer", fontFamily: "inherit", fontSize: ".78rem", fontWeight: 500,
@@ -186,7 +198,7 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
                 color: r === range ? TEXT : MUTED,
               }}
             >
-              {r}D
+              {r === "all" ? "ALL" : `${r}D`}
             </button>
           ))}
         </div>
@@ -204,7 +216,7 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
           height={h}
           viewBox={`0 0 ${width} ${h}`}
           role="img"
-          aria-label={`commands used per day over the last ${n} days`}
+          aria-label={isAll ? "commands used per day, all time" : `commands used per day over the last ${n} days`}
           style={{ display: "block", overflow: "visible", touchAction: "pan-y", cursor: "crosshair" }}
           onPointerMove={move}
           onPointerDown={move}
@@ -232,7 +244,7 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
           ))}
 
           {/* data (re-keyed so the draw-in replays when the range changes) */}
-          <g key={range}>
+          <g key={String(range)}>
             {n > 1 && (
               <path
                 className="ug-area"
@@ -301,7 +313,12 @@ export default function UsageGraph({ usage }: { usage?: Usage }) {
           }}
         >
           <span style={{ display: "block", color: MUTED, fontSize: ".72rem" }}>
-            {fmtDay(days[active].date, { weekday: "long", month: "short", day: "numeric" })}
+            {fmtDay(
+              days[active].date,
+              longSpan
+                ? { month: "short", day: "numeric", year: "numeric" }
+                : { weekday: "long", month: "short", day: "numeric" },
+            )}
           </span>
           <b style={{ fontWeight: 600 }}>{nf(uses)} {uses === 1 ? "command" : "commands"}</b>
         </div>
