@@ -58,8 +58,8 @@ function Squiggle({ children }: { children: React.ReactNode }) {
 
 export default function Hero() {
   const status = useStatus();
-  const users = useCountUp(status.data?.user_count);
-  const servers = useCountUp(status.data?.guild_count);
+  const users = useCountUp(status.data?.users);
+  const servers = useCountUp(status.data?.guilds);
 
   return (
     <section className="relative px-4 pb-16 pt-28 sm:pt-36">
